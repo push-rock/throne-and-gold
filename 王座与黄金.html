@@ -99,6 +99,24 @@ details .body{padding:4px 10px 10px}
 .bigsteps .st .ic{font-size:24px}
 .bigsteps .st b{color:#f0c96a;font-size:14px}
 .bigsteps .st .d{color:#a89877;font-size:12px}
+/* ---------- 掷骰剧场 ---------- */
+#dicetheater{position:fixed;top:15%;left:50%;transform:translateX(-50%);z-index:120;
+ background:rgba(18,12,6,.96);border:2px solid #b58a3a;border-radius:12px;padding:12px 28px;
+ text-align:center;min-width:280px;max-width:400px;box-shadow:0 0 30px rgba(0,0,0,.7);cursor:pointer;animation:fadein .25s}
+#dicetheater.off{display:none}
+#dicetheater .dt-name{color:#c9a24b;font-size:12.5px;letter-spacing:2px}
+#dicetheater .dt-die{font-size:46px;font-weight:bold;color:#f0e6cc;line-height:1.05;margin:4px 0;font-family:Georgia,serif}
+#dicetheater .dt-die.dt-set{animation:dtpop .35s}
+@keyframes dtpop{0%{transform:scale(.3);opacity:0}60%{transform:scale(1.3)}100%{transform:scale(1)}}
+#dicetheater .dt-sub{color:#a89877;font-size:12px}
+#dicetheater .dt-math{font-size:16px;color:#e8dcc0;margin:2px 0}
+#dicetheater .dt-math b{color:#f0c96a;font-size:18px}
+#dicetheater .dt-verdict{font-size:22px;font-weight:bold;margin:3px 0;animation:dtpop .3s}
+#dicetheater .dt-crit{color:#f0c96a;text-shadow:0 0 14px rgba(240,201,106,.7)}
+#dicetheater .dt-success{color:#9fd597}
+#dicetheater .dt-fail{color:#e0a05a}
+#dicetheater .dt-critfail{color:#e08a7a}
+#dicetheater .dt-parts{color:#8a7a5a;font-size:11.5px;line-height:1.6;max-width:360px;margin-top:2px}
 /* ---------- 弹窗 ---------- */
 #modal{position:fixed;inset:0;background:rgba(8,5,3,.72);display:flex;align-items:center;justify-content:center;z-index:50}
 #modal.off{display:none}
@@ -164,6 +182,7 @@ input[type=range]{width:130px;accent-color:#c9a24b}
   <div id="bottom"></div>
 </div>
 <div id="banner"></div>
+<div id="dicetheater" class="off"></div>
 <div id="modal" class="off"><div id="modalbox"></div></div>
 <div id="create" class="off"></div>
 <script>
@@ -625,23 +644,44 @@ function nodeUnlocked(id){const n=NODES[id];
  return false}
 
 /* ================= 掷骰 ================= */
-function skillBonus(skill){if(!skill)return 0;let b=0;
+/* ---------- 判定透明化：每个修正都有名有姓 ---------- */
+function skillBreakdown(skill){const parts=[];
+ if(!skill)return parts;
  const r=RACES[S.race],c=CLASSES[S.cls];
- b+=(r.skills&&r.skills[skill])||0;b+=(c.skills&&c.skills[skill])||0;
- const al=ALIGN[S.align];if(al.skills)b+=al.skills[skill]||0;
- for(const g of S.gear){const it=GEAR[g];if(!it)continue;if(it.skill===skill)b+=it.bonus||0;if(it.lore&&skill==="lore")b+=it.lore}
- for(const cp of S.comps){const cc=COMP[cp];if(cc&&cc.skills)b+=cc.skills[skill]||0}
- if(S.flags.vet_tip&&skill==="martial")b+=1;
- if(S.policies.guild==="intel"&&(skill==="lore"||skill==="stealth"))b+=1;
- if(S.assets.includes("intel_net"))b+=1;
- if(S.hp<=Math.ceil(S.hpMax/3))b-=1;
- return b}
+ if(r.skills&&r.skills[skill])parts.push({n:"种族·"+r.name,v:r.skills[skill]});
+ if(c.skills&&c.skills[skill])parts.push({n:"职业·"+c.name,v:c.skills[skill]});
+ const al=ALIGN[S.align];if(al.skills&&al.skills[skill])parts.push({n:"阵营·"+al.name,v:al.skills[skill]});
+ for(const g of S.gear){const it=GEAR[g];if(!it)continue;
+  if(it.skill===skill&&it.bonus)parts.push({n:"装备·"+it.name,v:it.bonus});
+  if(it.lore&&skill==="lore")parts.push({n:"装备·"+it.name,v:it.lore})}
+ for(const cp of S.comps){const cc=COMP[cp];if(cc&&cc.skills&&cc.skills[skill])parts.push({n:"同伴·"+cc.name,v:cc.skills[skill]})}
+ if(S.flags.vet_tip&&skill==="martial")parts.push({n:"老兵的指点",v:1});
+ if(S.policies&&S.policies.guild==="intel"&&(skill==="lore"||skill==="stealth"))parts.push({n:"政策·情报行会",v:1});
+ if(S.assets.includes("intel_net"))parts.push({n:"产业·情报网",v:1});
+ if(S.hp<=Math.ceil(S.hpMax/3))parts.push({n:"重伤拖累",v:-1});
+ return parts}
+function skillBonus(skill){if(!skill)return 0;
+ return skillBreakdown(skill).reduce((a,p)=>a+p.v,0)}
+/* 下一次判定的期望成功率（含待发的一次性奖励与半身人幸运） */
+function rollOdds(skill,dc,extra){
+ const mods=(skill?skillBonus(skill):0)+(extra||0)+(RACES[S.race].roll||0)+(S.flags.tip?1:0)+(S.flags.inspire?2:0);
+ const lucky=!!RACES[S.race].lucky;
+ const win=d=>d===20||(d!==1&&d+mods>=dc);
+ let ok=0;
+ for(let d=1;d<=20;d++){
+  if(d===1&&lucky){for(let e=1;e<=20;e++)if(win(e))ok+=.05}
+  else if(win(d))ok++}
+ return{mods,pct:Math.round(ok/20*100),need:Math.max(2,dc-mods),critAt:Math.max(2,dc+5-mods)}}
 function rollCheck(skill,dc,extra){
+ const odds=rollOdds(skill,dc,extra);
  let mods=(skill?skillBonus(skill):0)+(extra||0)+(RACES[S.race].roll||0);
- if(S.flags.tip){mods+=1;delete S.flags.tip;log("🎲 小乞丐的情报灵验了(+1)。")}
- if(S.flags.inspire){mods+=2;delete S.flags.inspire;log("✨ 激励骰生效：+2。")}
- let r=d20();
- if(RACES[S.race].lucky&&r===1){const r2=d20();log(`🎲 半身人幸运：把 1 重掷成 ${r2}`);r=r2}
+ const parts=skill?skillBreakdown(skill).map(p=>({...p})):[];
+ if(extra)parts.push({n:"形势",v:extra});
+ if(RACES[S.race].roll)parts.push({n:"种族·"+RACES[S.race].name+"的掷骰天赋",v:RACES[S.race].roll});
+ if(S.flags.tip){mods+=1;delete S.flags.tip;parts.push({n:"小乞丐的情报(一次性)",v:1});log("🎲 小乞丐的情报灵验了(+1)。")}
+ if(S.flags.inspire){mods+=2;delete S.flags.inspire;parts.push({n:"激励骰(一次性)",v:2});log("✨ 激励骰生效：+2。")}
+ let r=d20(),reroll=0;
+ if(RACES[S.race].lucky&&r===1){const r2=d20();log(`🎲 半身人幸运：把 1 重掷成 ${r2}`);reroll=r2;r=r2}
  const total=r+mods;let out;
  if(r===20)out="crit";else if(r===1)out="critfail";
  else if(total>=dc+5)out="crit";else if(total>=dc)out="success";
@@ -653,9 +693,32 @@ function rollCheck(skill,dc,extra){
   if(S._cf>=2){S.flags.inspire=true;S._cf=0;log("✨ 连续的挫折教会了你什么。获得激励骰(下次+2)。","epic")}}
  log(`🎲 [${skill?SK_LBL[skill]:"运气"}] ${r}${mods?sgn(mods):""} = ${total} vs DC${dc} → ${OUT_NAME[out]}`,
   out==="crit"?"epic":out==="critfail"?"bad":"");
-  if(out==="crit")banner("🎲 骰出 "+r+" —— 大成功！");
-  if(out==="critfail")banner("💀 骰出 "+r+" —— 大失败…");
+ diceTheater({skill,dc,mods,parts,r,reroll,total,out,odds});
  return out}
+/* ---------- 掷骰剧场：把每一次判定演出来 ---------- */
+const DT_CLS={crit:"dt-crit",success:"dt-success",fail:"dt-fail",critfail:"dt-critfail"};
+let _dq=[],_dOn=false,_dT=[],_dSpin=null;
+function _dtClear(){if(_dSpin){clearInterval(_dSpin);_dSpin=null}
+ for(const t of _dT)clearTimeout(t);_dT=[]}
+function diceTheater(info){_dq.push(info);if(_dq.length>3)_dq=_dq.slice(-3);
+ if(!_dOn)_dNextRoll()}
+function _dNextRoll(){
+ const info=_dq.shift(),el=$("dicetheater");
+ if(!info||!el){_dOn=false;if(el)el.classList.add("off");return}
+ _dOn=true;_dtClear();el.classList.remove("off");
+ el.onclick=()=>{_dtClear();el.classList.add("off");_dNextRoll()};
+ const nm=info.skill?SK_LBL[info.skill]:"运气";
+ el.innerHTML=`<div class="dt-name">🎲 ${nm}判定 · DC${info.dc}</div>
+  <div class="dt-die" id="dtDie">?</div>
+  <div class="dt-sub">成功率 ${info.odds.pct}%（需骰 ≥${info.odds.need}）</div>`;
+ _dSpin=setInterval(()=>{const e=$("dtDie");if(e)e.textContent=ri(1,20)},70);
+ _dT.push(setTimeout(()=>{if(_dSpin){clearInterval(_dSpin);_dSpin=null}
+  el.innerHTML=`<div class="dt-name">🎲 ${nm}判定 · DC${info.dc}</div>
+   <div class="dt-die dt-set">${info.r}</div>
+   <div class="dt-math">${info.reroll?`<span class="dt-sub">幸运重掷：1 → ${info.reroll} · </span>`:""}骰 ${info.r} ${sgn(info.mods)} = <b>${info.total}</b> vs DC${info.dc}</div>
+   <div class="dt-verdict ${DT_CLS[info.out]}">${OUT_NAME[info.out]}</div>
+   <div class="dt-parts">${info.parts.length?info.parts.map(p=>p.n+sgn(p.v)).join(" · "):"无修正"}</div>`},750));
+ _dT.push(setTimeout(()=>{el.classList.add("off");_dNextRoll()},3100))}
 const SK_LBL={martial:"武力",speech:"口才",lore:"学识",stealth:"潜行",command:"统御"};
 
 /* ================= 效果结算 ================= */
@@ -1172,6 +1235,14 @@ function renderLeft(){
   秩序 ${sgn(S.order)}${bar(S.order+100,200)}
   道德 ${sgn(S.good)}${bar(S.good+100,200,"good")}
   <div class="small">行至极端会解锁特殊事件与路线（守序契约/混乱劫掠/善良民心/邪恶恐惧）。</div></div></details>`;
+ /* 判定面板：回答"什么行为影响骰子" */
+ h+=`<details><summary>🎲 判定面板（修正从哪来）</summary><div class="body">`;
+ for(const k in SK_LBL){const parts=skillBreakdown(k),tot=parts.reduce((a,p)=>a+p.v,0);
+  h+=`<div class="row"><span class="small">${SK_LBL[k]}</span><span class="small" style="color:${tot>0?"#9fd597":tot<0?"#e0937a":"#cbbb99"}"><b>${sgn(tot)}</b>${parts.length?"<br>"+parts.map(p=>p.n+sgn(p.v)).join(" · "):""}</span></div>`}
+ h+=`<div class="small" style="margin-top:4px">所有掷骰另有：种族天赋 ${RACES[S.race].roll?sgn(RACES[S.race].roll):"±0"}${RACES[S.race].lucky?" · 半身人幸运（重掷1）":""}</div>`;
+ if(S.flags.inspire)h+=`<div class="small" style="color:#9fd597">✨ 激励骰待发：下次掷骰 +2</div>`;
+ if(S.flags.tip)h+=`<div class="small" style="color:#9fd597">🎲 情报待用：下次掷骰 +1</div>`;
+ h+=`<div class="small" style="color:#8a7a5a;margin-top:3px">骰20＝大成功 · 骰1＝大失败 · 总值≥DC+5 也是大成功</div></div></details>`;
  /* ---- 每日账本：钱从哪来，到哪去 ---- */
  const led=buildLedger();
  h+=`<div class="card" style="border-color:#8a6a2e"><h3>📒 每日账本</h3>
@@ -1332,7 +1403,10 @@ function resSummary(res){if(!res)return"";const p=[];
 function optMeta(o){
  const m=[];
  if(o.cost)m.push(`<span class="tag-bad">-${o.cost}GP</span>`);
- if(o.dc!=null)m.push(`<span class="tag-dc">🎲DC${o.dc}${o.skill?"·"+SK_LBL[o.skill]+sgn(skillBonus(o.skill)):""}</span>`);
+ if(o.dc!=null){const od=rollOdds(o.skill,o.dc,null);
+  const bd=o.skill?skillBreakdown(o.skill).map(p=>p.n+sgn(p.v)).join("、"):"";
+  const tip=`修正 ${sgn(od.mods)}：${bd||"无"}&#10;需骰≥${od.need} · 成功率${od.pct}%&#10;骰20或≥${od.critAt}＝大成功`;
+  m.push(`<span class="tag-dc" title="${tip}">🎲DC${o.dc}${o.skill?"·"+SK_LBL[o.skill]+sgn(skillBonus(o.skill)):""} · ${od.pct}%</span>`)}
  const src=o.res?o.res.success:o.base;
  const g=resSummary(src);
  if(g)m.push(`<span class="tag-ok">✓ ${g}</span>`);
@@ -1379,8 +1453,13 @@ function nodeGlobe(id){const n=NODES[id];
    const poor=d.cost&&S.gold<d.cost;
    const m=[];
    m.push(`<span class="tag-dc">⏱${d.days}日</span>`);
-   if(d.skill)m.push(`<span class="tag-dc">🎲DC${d.dc}·${SK_LBL[d.skill]}${sgn(skillBonus(d.skill))}</span>`);
-   else if(d.dc!=null)m.push(`<span class="tag-dc">🎲DC${d.dc}</span>`);
+   if(d.skill||d.dc!=null){
+    const extra=tradegear(d)+(d.key==="dragon"&&S.flags.dragon_slayers?-3:0);
+    const od=rollOdds(d.skill,d.dc,extra);
+    const bd=d.skill?skillBreakdown(d.skill).map(p=>p.n+sgn(p.v)).join("、"):"";
+    const tip=`修正 ${sgn(od.mods)}：${[bd,extra?"形势"+sgn(extra):""].filter(x=>x).join("、")||"无"}&#10;需骰≥${od.need} · 成功率${od.pct}%&#10;骰20或≥${od.critAt}＝大成功`;
+    if(d.skill)m.push(`<span class="tag-dc" title="${tip}">🎲DC${d.dc}·${SK_LBL[d.skill]}${sgn(skillBonus(d.skill)+extra)} · ${od.pct}%</span>`);
+    else m.push(`<span class="tag-dc" title="${tip}">🎲DC${d.dc} · ${od.pct}%</span>`)}
    if(d.cost)m.push(`<span class="tag-bad">-${d.cost}GP</span>`);
    const g=resSummary(d.res?d.res.success:null);
    if(g)m.push(`<span class="tag-ok">✓ ${g}</span>`);
@@ -1499,7 +1578,7 @@ function openHelp(){modal(`<h2>❓ 玩法说明</h2>
  <div class="st"><span class="ic">📒</span><span><b>左栏账本</b> → 买产业、调政策<br><span class="d">产业自动入账 = 放置收入</span></span></div>
  <div class="st"><span class="ic">⭐</span><span><b>阶段达标</b> → 顶栏命运仪式<br><span class="d">仪式 = 阶段晋升，解锁新玩法</span></span></div>
  </div>
- <div class="small">🎲 d20+修正 vs DC：骰20/超DC+5=大成功，骰1=大失败 · ⏸暂停/x1 x2 x4调速 · 自动存档</div>
+ <div class="small">🎲 d20+修正 vs DC：选项上标注成功率，悬停看修正来源 · 骰20/超DC+5=大成功，骰1=大失败 · ⏸暂停/x1 x2 x4调速 · 自动存档</div>
  <hr><button onclick="exportSave()">📤 导出</button>
  <button onclick="importSave()">📥 导入</button>
  <button class="danger" onclick="if(confirm('确定删档重来？'))restartGame()">🗑 删档重开</button>
