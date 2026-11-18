@@ -1,0 +1,1648 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>王座与黄金 · Throne &amp; Gold DEMO</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%}
+body{background:#171210;color:#e8dcc0;font:14px/1.6 "Microsoft YaHei",system-ui,sans-serif;overflow:hidden}
+#app{display:flex;flex-direction:column;height:100vh}
+/* ---------- 顶栏 ---------- */
+#top{display:flex;align-items:center;gap:10px;padding:8px 12px;background:#241b14;border-bottom:2px solid #5a4426;flex-wrap:wrap}
+#top .spacer{flex:1}
+.chip{background:#2f251b;border:1px solid #5a4426;border-radius:6px;padding:3px 10px;white-space:nowrap}
+.chip b{color:#f0c96a}
+.chip.mainRes{border-color:#c9a24b;box-shadow:0 0 8px rgba(201,162,75,.35)}
+.chip .rate{color:#8fd18f;font-size:12px}
+.chip .rate.neg{color:#e08a7a}
+button{cursor:pointer;background:#3a2d1e;color:#f0e6cc;border:1px solid #7a5c2e;border-radius:6px;padding:4px 10px;font-size:13px}
+button:hover{background:#4d3b26}
+button:disabled{opacity:.45;cursor:not-allowed}
+button.goldbtn{border-color:#c9a24b;color:#f5d98c;background:#4a381a}
+button.goldbtn:hover{background:#5d4722}
+button.danger{border-color:#a04a3a;color:#f0a08a}
+.small{font-size:12px;color:#a89877}
+/* ---------- 三栏 ---------- */
+#wrap{flex:1;display:flex;min-height:0}
+#left{width:270px;overflow-y:auto;padding:8px;background:#1d1712;border-right:1px solid #3a2c1c}
+#center{flex:1;min-width:0;position:relative;background:#14100c}
+#map{width:100%;height:100%;display:block}
+#right{width:320px;overflow-y:auto;padding:8px;background:#1d1712;border-left:1px solid #3a2c1c}
+/* ---------- 左栏卡片 ---------- */
+.card{background:#251d15;border:1px solid #4a3a22;border-radius:8px;padding:8px;margin-bottom:8px}
+.card h3{font-size:13px;color:#f0c96a;border-bottom:1px solid #4a3a22;padding-bottom:4px;margin-bottom:6px}
+.bar{height:8px;background:#0d0a07;border:1px solid #4a3a22;border-radius:4px;overflow:hidden;margin:2px 0 6px}
+.bar i{display:block;height:100%;background:#c9a24b}
+.bar.hp i{background:#b8503f}
+.bar.good i{background:#7ab55c}
+.bar.chaos i{background:#a05aa0}
+details{background:#251d15;border:1px solid #4a3a22;border-radius:8px;margin-bottom:8px}
+details summary{cursor:pointer;padding:7px 10px;font-size:13px;color:#f0c96a;list-style:none}
+details summary::before{content:"▸ "}
+details[open] summary::before{content:"▾ "}
+details .body{padding:4px 10px 10px}
+.row{display:flex;justify-content:space-between;align-items:center;gap:6px;padding:3px 0}
+.tag{display:inline-block;background:#33291c;border:1px solid #5a4426;border-radius:4px;padding:0 6px;font-size:12px;margin:1px}
+/* ---------- 地图 ---------- */
+.node{cursor:pointer}
+.node circle{fill:#2f251b;stroke:#7a5c2e;stroke-width:2}
+.node.locked circle{fill:#1a1512;stroke:#3a3128;stroke-dasharray:4 3}
+.node.locked{opacity:.35}
+.node.mine circle{stroke:#c9a24b;stroke-width:3}
+.node text{fill:#e8dcc0;font-size:12px;text-anchor:middle;pointer-events:none}
+.node .ico{font-size:18px;pointer-events:none}
+.node.locked text{fill:#5a5044}
+.node.act circle{animation:pulse 1.2s infinite}
+@keyframes pulse{0%,100%{stroke-width:2}50%{stroke-width:5}}
+.edge{stroke:#4a3a22;stroke-width:1.5;stroke-dasharray:6 4}
+.occupied{fill:#c9a24b !important}
+/* ---------- 日志 ---------- */
+#logbox{font-size:12.5px}
+#logbox .entry{padding:3px 0;border-bottom:1px dashed #33291c}
+#logbox .d{color:#8a7a5a;margin-right:4px}
+#logbox .good{color:#9fd597}
+#logbox .bad{color:#e0937a}
+#logbox .epic{color:#f0c96a;font-weight:bold}
+/* ---------- 底栏事件卡 ---------- */
+#bottom{min-height:110px;padding:8px 12px;background:#241b14;border-top:2px solid #5a4426;display:flex;gap:14px;align-items:stretch;overflow-x:auto}
+.bsec{display:flex;flex-direction:column;gap:6px;min-width:280px}
+.bsec-t{font-size:12px;color:#c9a24b;letter-spacing:1px;border-bottom:1px solid #4a3a22;padding-bottom:3px;white-space:nowrap}
+.bsec-cards{display:flex;gap:10px;align-items:center;flex:1}
+.evcard{min-width:200px;max-width:250px;background:#2f2114;border:2px solid #b58a3a;border-radius:8px;padding:10px;cursor:pointer;position:relative;animation:evpulse 1.6s infinite}
+.evcard:hover{background:#3b2b18;border-color:#f0c96a}
+@keyframes evpulse{0%,100%{box-shadow:0 0 0 rgba(201,162,75,0)}50%{box-shadow:0 0 10px rgba(201,162,75,.55)}}
+.evcard .t{color:#f0c96a;font-weight:bold;font-size:15px}
+.evcard .dl{display:inline-block;background:#4a221a;color:#f0a08a;border-radius:4px;padding:0 7px;font-weight:bold;font-size:13px;margin-top:6px}
+.evcard .cta{font-size:12px;color:#c9a24b;border-top:1px dashed #5a4426;margin-top:8px;padding-top:4px;text-align:center}
+.actchip{background:#2a231b;border:1px solid #4a3a22;color:#b8a988;border-radius:6px;padding:3px 10px;white-space:nowrap;font-size:13px}
+.hint{color:#a89877;font-size:13px;padding:0 10px}
+/* ---------- 信息层级 ---------- */
+.chip{font-size:13px}
+.chip b{font-size:16px;color:#f5d98c}
+.chip.mainRes b{font-size:17px}
+#modalbox .story{color:#a8987a;font-size:13px;font-style:italic}
+.opt{display:block;width:100%;text-align:left;margin:6px 0;padding:8px 10px;line-height:1.4;font-size:15px;font-weight:600;color:#f0e6cc}
+.opt .meta{display:flex;flex-wrap:wrap;gap:5px;font-size:12px;font-weight:400;margin-top:4px}
+.meta .tag-ok{background:#1d3220;color:#9fd597;border-radius:4px;padding:0 6px}
+.meta .tag-bad{background:#3a1f1a;color:#f0a08a;border-radius:4px;padding:0 6px}
+.meta .tag-dc{background:#3a2d14;color:#e0b05a;border-radius:4px;padding:0 6px}
+.ledger-net{font-size:19px;font-weight:bold;line-height:1.2;margin:2px 0 6px}
+/* ---------- 当日进度条 ---------- */
+.dayprog{width:150px;height:10px;background:#0d0a07;border:1px solid #5a4426;border-radius:5px;overflow:hidden;flex:none;position:relative}
+.dayprog i{display:block;height:100%;width:0%;background:linear-gradient(90deg,#7a5c2e,#f0c96a);transition:width .09s linear}
+.dayprog.paused i{background:#4a4237}
+.dayprog .dplabel{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:9px;color:#d8cba8;letter-spacing:1px;pointer-events:none}
+.bigsteps{margin:10px 0}
+.bigsteps .st{display:flex;align-items:center;gap:12px;padding:8px 10px;border:1px solid #4a3a22;border-radius:8px;margin:6px 0;background:#2a2118}
+.bigsteps .st .ic{font-size:24px}
+.bigsteps .st b{color:#f0c96a;font-size:14px}
+.bigsteps .st .d{color:#a89877;font-size:12px}
+/* ---------- 弹窗 ---------- */
+#modal{position:fixed;inset:0;background:rgba(8,5,3,.72);display:flex;align-items:center;justify-content:center;z-index:50}
+#modal.off{display:none}
+#modalbox{background:#251d15;border:2px solid #c9a24b;border-radius:12px;max-width:640px;width:92%;max-height:86vh;overflow-y:auto;padding:18px 20px;box-shadow:0 0 40px rgba(201,162,75,.25)}
+#modalbox h2{color:#f0c96a;font-size:17px;margin-bottom:8px}
+#modalbox .story{color:#a8987a;font-size:13px;font-style:italic;margin-bottom:12px;white-space:pre-wrap}
+.opt{display:block;width:100%;text-align:left;margin:6px 0;padding:8px 10px;line-height:1.4;font-size:15px;font-weight:600;color:#f0e6cc}
+.opt .meta{display:flex;flex-wrap:wrap;gap:5px;font-size:12px;font-weight:400;margin-top:4px}
+.opt .dc{color:#e0a05a}
+.opt .risk{color:#e07a5a}
+hr{border:none;border-top:1px solid #4a3a22;margin:10px 0}
+/* ---------- 横幅提示 ---------- */
+#banner{position:fixed;top:60px;left:50%;transform:translateX(-50%);background:#4a381a;border:1px solid #f0c96a;color:#f5d98c;padding:10px 18px;border-radius:8px;z-index:60;box-shadow:0 0 24px rgba(201,162,75,.4);display:none;max-width:80%;text-align:center}
+#banner.on{display:block;animation:fadein .4s}
+@keyframes fadein{from{opacity:0;transform:translateX(-50%) translateY(-8px)}to{opacity:1}}
+/* ---------- 新手引导 ---------- */
+#tutbar{display:none;align-items:center;gap:12px;padding:5px 14px;background:#2c2113;border-bottom:1px solid #c9a24b;font-size:13px;color:#f0e6cc}
+#tutbar b{color:#f0c96a}
+#tutbar button{margin-left:auto;font-size:12px;padding:2px 8px}
+.tut-hi{animation:tuthi 1.4s infinite}
+@keyframes tuthi{0%,100%{box-shadow:0 0 0 rgba(240,201,106,0)}50%{box-shadow:0 0 12px 3px rgba(240,201,106,.75)}}
+g.tut-hi circle{stroke:#f0c96a !important;stroke-width:4;animation:pulse 1.2s infinite}
+/* ---------- 资源飘字 ---------- */
+.floaty{position:fixed;font-weight:bold;font-size:17px;pointer-events:none;z-index:99;
+ animation:floaty 1.8s ease-out forwards;text-shadow:0 1px 3px rgba(0,0,0,.8);white-space:nowrap}
+.floaty.gold{color:#f5d98c}
+.floaty.infl{color:#9fd5ff}
+.floaty.hp{color:#e07a5a}
+.floaty.small{font-size:13px}
+@keyframes floaty{0%{opacity:0;transform:translateY(6px)}12%{opacity:1}70%{opacity:1}100%{opacity:0;transform:translateY(-34px)}}
+/* ---------- 资源条闪动 ---------- */
+.chip.flash{animation:chipflash .8s}
+@keyframes chipflash{0%,100%{background:#2f251b}35%{background:#5d4722;box-shadow:0 0 12px rgba(240,201,106,.8)}}
+/* ---------- 开局向导 ---------- */
+#create{position:fixed;inset:0;background:radial-gradient(ellipse at center,#2a2013 0%,#100c08 75%);z-index:80;overflow-y:auto;display:flex;align-items:flex-start;justify-content:center}
+#create.off{display:none}
+#create .wiz{max-width:620px;width:94%;margin:40px auto;padding:24px;background:#251d15;border:2px solid #c9a24b;border-radius:12px}
+#create h1{color:#f0c96a;text-align:center;font-size:24px;letter-spacing:4px;margin-bottom:2px}
+#create .sub{text-align:center;color:#a89877;margin-bottom:18px}
+#create h2{color:#f0c96a;font-size:15px;margin:14px 0 8px}
+.pick{display:flex;flex-wrap:wrap;gap:8px}
+.pick .p{flex:1 1 170px;background:#2f251b;border:1px solid #5a4426;border-radius:8px;padding:8px 10px;cursor:pointer}
+.pick .p:hover{border-color:#c9a24b;background:#3b2e1d}
+.pick .p.sel{border-color:#f0c96a;box-shadow:0 0 10px rgba(201,162,75,.4)}
+.pick .p b{color:#f0c96a}
+.pick .p .d{font-size:12px;color:#a89877}
+input[type=text]{background:#1a1512;border:1px solid #5a4426;color:#f0e6cc;border-radius:6px;padding:6px 10px;font-size:14px;width:200px}
+input[type=range]{width:130px;accent-color:#c9a24b}
+.wizbtns{display:flex;justify-content:space-between;margin-top:20px}
+.endstats{display:flex;flex-wrap:wrap;gap:8px;margin:10px 0}
+.endstats .chip{flex:1}
+</style>
+</head>
+<body>
+<div id="app">
+  <div id="top"></div>
+  <div id="tutbar"></div>
+  <div id="wrap">
+    <div id="left"></div>
+    <div id="center"><svg id="map" viewBox="0 0 900 580" preserveAspectRatio="xMidYMid meet"></svg></div>
+    <div id="right"><div id="logbox"></div></div>
+  </div>
+  <div id="bottom"></div>
+</div>
+<div id="banner"></div>
+<div id="modal" class="off"><div id="modalbox"></div></div>
+<div id="create" class="off"></div>
+<script>
+"use strict";
+/* ================= 工具 ================= */
+const $=id=>document.getElementById(id);
+function esc(s){return String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;"}[c]))}
+let _rs=1;
+function rngSeed(s){_rs=s>>>0||1}
+function rng(){_rs|=0;_rs=_rs+0x6D2B79F5|0;let t=Math.imul(_rs^_rs>>>15,1|_rs);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296}
+function ri(a,b){return a+Math.floor(rng()*(b-a+1))}
+function d20(){return ri(1,20)}
+function fmt(n){n=Math.floor(n);if(!isFinite(n))n=0;return n.toLocaleString("zh-CN")}
+function clamp(v,a,b){return Math.max(a,Math.min(b,v))}
+function sgn(n){return n>=0?"+"+n:""+n}
+function choice(a){return a[Math.floor(rng()*a.length)]}
+const OUT_NAME={crit:"大成功",success:"成功",fail:"失败",critfail:"大失败"};
+
+/* ================= 种族 ================= */
+const RACES={
+ human:{name:"人类",icon:"🧑",desc:"全能 · 每次掷骰+1，起始影响力+5",roll:1,startInfl:5},
+ elf:{name:"精灵",icon:"🧝",desc:"魔法与学识 · 学识判定+2，主资源日入+10%",skills:{lore:2},mainPlus:.1},
+ dwarf:{name:"矮人",icon:"🧔",desc:"工匠 · 装备-20%，矿业/作坊收益+25%",gearCut:.2,minePlus:.25},
+ halfling:{name:"半身人",icon:"🧒",desc:"幸运 · 骰出1可重掷一次",lucky:true},
+ orc:{name:"兽人",icon:"👹",desc:"武力 · 武力判定+3，战利品+15%",skills:{martial:3},lootPlus:.15},
+ tiefling:{name:"提夫林",icon:"😈",desc:"魔裔 · 口才+2，可签魔契(效果+50%/道德-5)",skills:{speech:2}}
+};
+/* ================= 职业 ================= */
+const CLASSES={
+ mercenary:{name:"佣兵",icon:"⚔️",line:"throne",desc:"武力+2 · 王座线：军团军力+10%",skills:{martial:2},hpMax:12,gold:20,gear:["old_sword",null,"leather"],throne:{armyPow:.10}},
+ cleric:{name:"神官",icon:"✨",line:"throne",desc:"休整回满血 · 王座：民心增速+15%",hpMax:12,gold:15,heal:true,throne:{moralePlus:.15},goldFx:{repPlus:.15}},
+ bard:{name:"吟游诗人",icon:"🎻",line:"both",desc:"口才+2 · 王座：影响力日入+25% / 黄金：店铺会馆+25%",skills:{speech:2},hpMax:10,gold:10,throne:{mainPlus:.25},goldFx:{shopPlus:.25}},
+ ranger:{name:"游侠",icon:"🏹",line:"throne",desc:"行动耗时-25% · 王座：战役侦察(敌军力可见)",hpMax:11,gold:12,fast:.25,throne:{scout:true}},
+ merchant:{name:"行商",icon:"🛒",line:"gold",desc:"买卖价差+10% · 黄金：商队+25%，港口提前解锁",hpMax:10,gold:50,throne:{buyCheap:.15},goldFx:{caravanPlus:.25,portEarly:true}},
+ smith:{name:"工匠",icon:"🔨",line:"gold",desc:"可半价自造装备 · 黄金：产业维护-20%",hpMax:12,gold:30,selfCraft:true,throne:{armyPow:.05},goldFx:{maintCut:.2}},
+ nightwalker:{name:"夜行者",icon:"🗡️",line:"gold",desc:"潜行+2 · 黑市解锁 · 黄金：走私+40%",skills:{stealth:2},hpMax:10,gold:25,throne:{intel:true},goldFx:{smugglePlus:.4},blackmarket:true},
+ alchemist:{name:"炼金术士",icon:"⚗️",line:"gold",desc:"学识+2 · 黄金：药剂工坊+30%",skills:{lore:2},hpMax:10,gold:20,potions:true,throne:{medic:.25},goldFx:{apothPlus:.3}}
+};
+/* ================= 阵营 ================= */
+const ALIGN={
+ lg:{name:"守序善良",order:40,good:40,desc:"民心/口碑事件收益+20%",mod:"kindBoost"},
+ ng:{name:"中立善良",order:0,good:40,desc:"治疗类行动效果+25%"},
+ cg:{name:"混乱善良",order:-40,good:40,desc:"掠夺所得全额转化为人心"},
+ ln:{name:"守序中立",order:40,good:0,desc:"契约类行动 DC-2",mod:"pactBonus"},
+ tn:{name:"绝对中立",order:0,good:0,desc:"事件多一个稳妥的旁观选项"},
+ cn:{name:"混乱中立",order:-40,good:0,desc:"随机事件权重+20%",mod:"wild"},
+ le:{name:"守序邪恶",order:40,good:-40,desc:"起始金币×2",mod:"richStart"},
+ ne:{name:"中立邪恶",order:0,good:-40,desc:"失败惩罚-50%",mod:"thickSkin"},
+ ce:{name:"混乱邪恶",order:-40,good:-40,desc:"武力判定再+2",skills:{martial:2}}
+};
+const ALIGN_LBL=()=>({order:"秩序",good:"道德"});
+function alignName(o,g){return (o>=30?"守序":o<=-30?"混乱":"中立")+(g>=30?"善良":g<=-30?"邪恶":"中立")}
+
+/* ================= 主线 ================= */
+const LINES={
+ throne:{name:"王座",icon:"🏛",mainName:"影响力",mainKey:"infl",
+  stages:["无名之辈","小有名气","一会之长","一城之主","兵团统帅","一国之君"],
+  hint:"以影响力问鼎王座：协会 → 领地 → 兵团 → 王冠。金币是军费。"},
+ gold:{name:"黄金",icon:"🤝",mainName:"声誉",mainKey:"infl",
+  stages:["白手之人","店主","行会元老","庄园主","财阀","贸易亲王"],
+  hint:"以财力垄断黄金：店铺 → 行会 → 庄园 → 财团 → 国债。声誉是润滑剂。"}
+};
+/* 阶段门槛(进入该阶段所需)与仪式成本(进入后花费) 1-based stage 1..5 */
+const STAGE_REQ={
+ throne:{1:{infl:25},2:{infl:150,gold:200},3:{infl:450,gold:2000},4:{infl:1500,mil:80},5:{infl:5000,mil:250,occupy:"silver"}},
+ gold:{1:{gold:150},2:{gold:1200,infl:60},3:{gold:8000,infl:150},4:{gold:40000,infl:400},5:{gold:150000}}
+};
+const RITUAL_COST={throne:{2:{gold:200,infl:100},3:{gold:2000,infl:200},4:{infl:800},5:{infl:2500}},
+                   gold:{1:{gold:100},2:{gold:500,infl:30},3:{gold:6000},4:{gold:25000},5:{gold:100000}}};
+/* 仪式道路抉择 */
+const RITUALS={
+ throne:{2:{t:"成立冒险者协会",txt:"酒馆里的面孔都望着你。以什么方式立起这面旗帜？",opts:[
+   {k:"found_force",n:"以武立会",d:"立会即立威。战役掷骰+1",fx:{flag:"found_force"}},
+   {k:"found_wealth",n:"以财养会",d:"会里管饭。产业收益+10%",fx:{flag:"found_wealth"}},
+   {k:"found_charity",n:"以善聚会",d:"替人排忧。影响力日入+20%",fx:{flag:"found_charity"}}]},
+  3:{t:"获取领地",txt:"一纸敕封，你将从“名人”变成“领主”。你打算怎么拿到它？",opts:[
+   {k:"fief_merit",n:"军功请封",d:"以功勋换敕封，影响力+50",fx:{main:50,flag:"fief_merit"}},
+   {k:"fief_coin",n:"捐官买爵",d:"额外花费1000金币打点，民心+10",fx:{gold:-1000,morale:10}}]},
+  4:{t:"建立兵团",txt:"协会的少年们已经握不稳木剑了。你要一支真正的军队。",opts:[
+   {k:"army_standing",n:"常备军团",d:"军力+10%，但军纪森严",fx:{flag:"army_standing"}},
+   {k:"army_merc",n:"佣兵体系",d:"军队维护费-30%",fx:{flag:"army_merc"}}]},
+  5:{t:"加冕为王",txt:"王都银月城已在你麾下。大主教问：以何名义加冕？",opts:[
+   {k:"crown_grace",n:"仁王加冕",d:"道德+10，民心+10",fx:{good:10,morale:10}},
+   {k:"crown_iron",n:"铁王加冕",d:"邪恶+10，军力上限+50",fx:{evil:10,milcap:50}}]}},
+ gold:{1:{t:"盘下铺面",txt:"灰石镇的杂货铺老板要回乡了。这是一切的起点。",opts:[
+   {k:"shop_honest",n:"诚实经营",d:"童叟无欺。声誉+10",fx:{main:10}},
+   {k:"shop_gray",n:"灰色经营",d:"账目灵活。产业收益+10%",fx:{flag:"shop_gray"}}]},
+  2:{t:"加入商会",txt:"三位元老在茶室等你。要坐上那把椅子，得让他们点头。",opts:[
+   {k:"guild_old",n:"靠老钱派",d:"契约收益+15%",fx:{flag:"guild_old"}},
+   {k:"guild_new",n:"靠新钱党",d:"声誉日入+0.5",fx:{flag:"guild_new"}}]},
+  3:{t:"竞拍庄园",txt:"破产男爵的庄园明日开拍。你的对手都带着钱袋。",opts:[
+   {k:"manor_refuge",n:"安置流民",d:"人口+200，道德+8",fx:{pop:200,good:8}},
+   {k:"manor_enclose",n:"圈地扩园",d:"地租+10%，邪恶+5",fx:{flag:"manor_enclose",evil:5}}]},
+  4:{t:"组建财团",txt:"船长、行长、寡头——他们都出了钱。董事会席位如何分配？",opts:[
+   {k:"consort_family",n:"家族控股",d:"声誉日入+1，商战掷骰+1",fx:{flag:"consort_family"}},
+   {k:"consort_public",n:"公开发售",d:"立即回笼5000金币，声誉-20",fx:{gold:5000,main:-20}}]},
+  5:{t:"贸易亲王之位",txt:"国王的债务清单上，你的名字排在最上面。你要如何使用它？",opts:[
+   {k:"prince_crown",n:"支持王室",d:"政令通过率大增(支持率+15)",fx:{flag:"prince_crown"}},
+   {k:"prince_debt",n:"以债控国",d:"国债认购价-20%",fx:{flag:"prince_debt"}}]}}
+};
+
+/* ================= 地图节点 ================= */
+const NODES={
+ oak:{name:"橡木村",icon:"🏘",x:150,y:340,type:"village",danger:0,auto:true,desc:"你出发的地方。便宜、安全、无聊。"},
+ gray:{name:"灰石镇",icon:"🏛",x:290,y:255,type:"town",auto:true,desc:"佣兵与商贩的集散地，有像样的市场。"},
+ mine:{name:"老矿坑",icon:"⛏",x:250,y:150,type:"resource",stage:1,flag:"mine_rumor",desc:"废弃的矿坑。铁镐声有时在夜里响起。"},
+ ruin:{name:"黑风废墟",icon:"🏰",x:430,y:120,type:"ruin",flag:"ruin_rumor",desc:"黑风山丘上的古堡遗迹，冒险者的坟场与宝库。"},
+ forest:{name:"迷雾森林",icon:"🌲",x:120,y:195,type:"resource",stage:1,desc:"药草与传说都长在这里。"},
+ pass:{name:"商路隘口",icon:"⛰",x:400,y:335,type:"pass",stage:1,desc:"一切商队的必经之路，也是一切劫掠的必经之路。"},
+ silver:{name:"银月城",icon:"👑",x:560,y:215,type:"capital",stage:2,contest:{pow:200,stage:4,name:"王都"},desc:"王国的心脏。贵族、议会与金库都在这里。"},
+ academy:{name:"学院城",icon:"📚",x:545,y:90,type:"city",stage:2,desc:"法师与学者的塔城，魔晶的产地。"},
+ goblin:{name:"哥布林营地",icon:"🏕",x:360,y:430,type:"hostile",stage:2,contest:{pow:40,stage:2,name:"哥布林部落"},desc:"绿皮们的巢穴，讨伐榜上常年第一名。"},
+ holy:{name:"圣白山",icon:"⛪",x:655,y:335,type:"holy",stage:3,desc:"修道院所在的圣山，香客与病人的去处。"},
+ port:{name:"港口自由城",icon:"⚓",x:665,y:150,type:"port",stage:3,portEarly:true,desc:"不问货来处的自由港。"},
+ north:{name:"北境要塞",icon:"🛡",x:300,y:55,type:"fort",stage:4,contest:{pow:80,stage:4,name:"北境守军"},desc:"抵御蛮族的要塞，也是军需生意的大门。"},
+ south:{name:"南方公国",icon:"🎲",x:655,y:450,type:"duchy",stage:4,contest:{pow:120,stage:4,name:"南方公国"},desc:"盛产丝绸与阴谋的富庶邻邦。"},
+ dragon:{name:"龙脊山",icon:"🐉",x:780,y:60,type:"legend",stage:4,desc:"巨龙的巢穴在云上。屠龙者或其遗物，都是传说。"},
+ black:{name:"黑市岛",icon:"☠",x:570,y:510,type:"black",black:true,desc:"没有船票，只有介绍人。"}
+};
+const EDGES=[["oak","gray"],["oak","forest"],["gray","mine"],["mine","ruin"],["gray","pass"],
+ ["pass","goblin"],["pass","silver"],["silver","academy"],["academy","port"],["silver","holy"],
+ ["holy","south"],["silver","south"],["north","mine"],["north","academy"],["port","dragon"],["goblin","black"],["silver","north"]];
+/* ================= 装备 ================= */
+const GEAR={
+ old_sword:{name:"旧长剑",icon:"🗡",price:0,skill:"martial",bonus:1},
+ iron_sword:{name:"铁剑",icon:"🗡",price:30,skill:"martial",bonus:2},
+ leather:{name:"皮甲",icon:"🥋",price:20,defense:1},
+ lockpick:{name:"盗贼工具",icon:"🗝",price:50,skill:"stealth",bonus:2},
+ chain:{name:"锁甲",icon:"🛡",price:150,defense:2},
+ fine_steel:{name:"精钢武器",icon:"⚔",price:200,skill:"martial",bonus:4},
+ mount:{name:"坐骑",icon:"🐎",price:100,fast:.1},
+ ledger:{name:"账本",icon:"📔",price:60,skill:"lore",bonus:1,trade:1},
+ bell:{name:"商队铃铛",icon:"🔔",price:120,defense:0,raid:1},
+ safe:{name:"保险箱",icon:"🗄",price:400,defense:0,safe:.5},
+ spellbook:{name:"魔导书",icon:"📖",price:300,skill:"lore",bonus:2},
+ plate:{name:"板甲",icon:"🛡",price:800,defense:3},
+ enchanted:{name:"附魔武器",icon:"✨",price:1500,skill:"martial",bonus:6,lore:1}
+};
+const GEAR_SHOP=["iron_sword","leather","lockpick","chain","fine_steel","mount","ledger","bell","safe","spellbook","plate","enchanted"];
+/* ================= 产业 ================= */
+const ASSETS={
+ stall:{name:"兼职铺位",icon:"🧺",price:100,income:2,line:"both",desc:"+2 GP/日"},
+ shop:{name:"商铺",icon:"🏪",price:600,income:10,line:"both",desc:"+10 GP/日"},
+ caravan:{name:"商队",icon:"🚚",price:2000,income:25,line:"both",desc:"+25 GP/日 · 可能被劫掠"},
+ mine_contract:{name:"矿坑契约",icon:"⛏",price:5000,income:45,line:"both",desc:"+45 GP/日 · 矿难风险"},
+ forge:{name:"作坊",icon:"🔨",price:1500,income:20,line:"gold",desc:"+20 GP/日"},
+ apothecary:{name:"药剂工坊",icon:"⚗",price:2500,income:35,line:"gold",desc:"+35 GP/日 · 瘟疫时翻倍"},
+ hall:{name:"会馆",icon:"🎭",price:8000,line:"gold",rep:.5,stage:2,desc:"声誉+0.5/日 · 契约DC-1"},
+ fleet:{name:"远洋船队",icon:"⛵",price:12000,income:90,line:"gold",stage:3,req:"sailas",desc:"+90 GP/日 · 需船长塞拉斯"},
+ bank:{name:"银行",icon:"🏦",price:30000,income:150,line:"gold",stage:4,desc:"+150 GP/日 · 解锁国债"},
+ armory:{name:"军械库",icon:"⚒",price:4000,line:"throne",stage:3,armyPow:.05,desc:"军力+5%"},
+ intel_net:{name:"情报网",icon:"👁",price:6000,line:"throne",stage:3,evDc:1,desc:"事件掷骰+1"},
+ castle:{name:"城堡",icon:"🏰",price:30000,line:"throne",stage:4,milcap:100,onBuy:{main:300},desc:"军力上限+100 · 影响力+300"}
+};
+const ASSET_SHOP=["stall","shop","caravan","mine_contract","forge","apothecary","hall","fleet","bank","armory","intel_net","castle"];
+/* ================= 建筑(领地/庄园) ================= */
+const BUILDINGS={
+ farm:{name:"农田",icon:"🌾",price:800,maint:3,line:"throne",fx:"人口上限+500"},
+ market_b:{name:"市集",icon:"🏬",price:1200,maint:4,line:"throne",fx:"领地税收+20%"},
+ temple:{name:"神殿",icon:"⛪",price:1500,maint:3,line:"throne",fx:"民心目标+10"},
+ wall:{name:"城墙",icon:"🧱",price:2000,maint:4,line:"throne",fx:"袭击事件掷骰+3"},
+ barracks:{name:"兵营",icon:"⛺",price:1000,maint:3,line:"throne",fx:"驻军维持军力+15"},
+ academy_b:{name:"学院",icon:"📜",price:2500,maint:5,line:"throne",fx:"解锁法师团"},
+ fields:{name:"田庄",icon:"🌾",price:800,maint:3,line:"gold",fx:"地租+20%"},
+ granary:{name:"谷仓",icon:"🛢",price:1000,maint:3,line:"gold",fx:"荒年免疫"},
+ manor_h:{name:"庄园府邸",icon:"🏘",price:1500,maint:4,line:"gold",fx:"佃农口碑目标+10"},
+ guards:{name:"私兵卫队",icon:"🛡",price:1200,maint:5,line:"gold",fx:"袭击事件掷骰+3"}
+};
+/* ================= 兵种 ================= */
+const UNITS={
+ militia:{name:"民兵",icon:"🪓",price:8,maint:1,pow:2},
+ regular:{name:"正规军",icon:"⚔",price:25,maint:3,pow:5},
+ knight:{name:"骑士",icon:"🐎",price:70,maint:8,pow:12},
+ mage:{name:"法师团",icon:"🔮",price:120,maint:12,pow:15,req:"academy_b"}
+};
+/* ================= 同伴 ================= */
+const COMP={
+ greyclaw:{name:"灰爪(游荡者)",icon:"🐈",wage:2,skills:{stealth:2},how:"矿坑/酒馆",d:"潜行+2"},
+ moelle:{name:"茉尔(见习牧师)",icon:"✨",wage:3,how:"修道院",d:"每日回血+0.5 · 大失败受伤-1"},
+ lyreen:{name:"铃音(吟游诗人)",icon:"🎵",wage:3,how:"酒馆",d:"主资源日入+20%"},
+ ironguard:{name:"铁盾(佣兵队长)",icon:"🛡",wage:5,how:"佣兵市场",d:"军力+10 · 战役将领+3 / 黄金:护卫等效+1"},
+ moying:{name:"墨影(学者)",icon:"📖",wage:4,how:"学院城",d:"学识+2 · 契约收益+10%"},
+ amber:{name:"琥珀(商人之女)",icon:"💍",wage:4,how:"商队",d:"装备-15% · 商队+15%"},
+ barn:{name:"老巴恩(掌柜)",icon:"🧮",wage:4,how:"灰石镇",d:"全产业维护-10%"},
+ sailas:{name:"塞拉斯(船长)",icon:"⚓",wage:5,how:"港口",d:"解锁船队 · 船队+25%"}
+};
+const COMP_ALL=["greyclaw","moelle","lyreen","ironguard","moying","amber","barn","sailas"];
+/* ================= 垄断产地(黄金线) ================= */
+const COMMODITIES={
+ iron:{name:"铁矿",origins:{mine:12000,north:12000}},
+ herb:{name:"药草",origins:{forest:9000,holy:9000}},
+ crystal:{name:"魔晶",origins:{academy:15000,port:15000}}
+};
+/* ================= 主动行动 ================= */
+const ACTIONS={
+ herb:{name:"采药",node:"oak",skill:"lore",dc:8,days:3,desc:"后山的老药圃",res:{crit:{gold:15,main:1,log:"一整篮月苔草，药剂师出了好价。"},success:{gold:10,log:"篮子装满了。"},fail:{gold:4,log:"只挖到几根干草。"}}},
+ oddjob:{name:"打杂跑腿",node:"oak",skill:"speech",dc:8,days:4,desc:"酒馆里的零活",res:{crit:{gold:18,main:2,log:"你什么都干得漂亮，酒馆老板多塞了几个铜板。"},success:{gold:10,log:"搬完最后一桶麦酒，你拿到了工钱。"},fail:{gold:5,log:"摔碎了两只杯子，被扣了工钱。"}}},
+ rest:{name:"休整",node:"oak",skill:null,days:3,cost:5,desc:"回满 HP",special:"rest"},
+ stall:{name:"摆摊叫卖",node:"gray",skill:"speech",dc:10,days:4,desc:"在市集支个摊",res:{crit:{gold:25,main:2,log:"你的摊位前排起了队。"},success:{gold:15,log:"收摊时钱袋沉了一些。"},fail:{gold:6,log:"一整天只卖出一把梳子。"}}},
+ recruit:{name:"招募同伴",node:"gray",skill:null,days:1,cost:20,desc:"在酒馆贴一张招募告示",special:"recruit"},
+ gather:{name:"采集药草",node:"forest",skill:"lore",dc:10,days:4,desc:"迷雾深处的稀有药草",res:{crit:{gold:22,main:2,log:"一株百年龙葵！"},success:{gold:14,log:"药草装满了背囊。"},fail:{gold:6,log:"迷雾里转了一天，两手空空。"}}},
+ mine_act:{name:"采矿",node:"mine",skill:"martial",dc:11,days:5,desc:"老矿坑的深处",res:{crit:{gold:32,log:"你凿开了一面银脉。"},success:{gold:16,log:"矿石换到了好价钱。"},fail:{gold:8,log:"只挖到些贫矿。"}}},
+ iron_chain:{name:"签铁矿供货契约",node:"mine",skill:"speech",dc:12,days:3,line:"gold",stage:1,desc:"长期供货，+12 GP/日",res:{crit:{main:5,flag:"iron_contract",log:"矿主握着你的手不放：'多少都行！'"},success:{flag:"iron_contract",log:"契约签了，铁镐声从此为你作响。"},fail:{log:"矿主嫌你给的价格太死。"}}},
+ escort:{name:"护送商队",node:"pass",skill:"martial",dc:12,days:5,desc:"⚠ 危险，护商有赏",res:{crit:{gold:60,main:2,log:"刀没出鞘，商人们已在传你的名字。"},success:{gold:40,log:"商队平安过隘。"},fail:{gold:10,hp:-3,log:"一场恶战。货保住了，你没全保住。"}}},
+ trade_run:{name:"跑一趟货",node:"pass",skill:"lore",dc:12,days:5,line:"gold",desc:"低买高卖",res:{crit:{gold:85,main:2,log:"你压中了行情，整队货翻了倍。"},success:{gold:48,log:"小赚一笔。"},fail:{gold:-10,log:"行情变了。亏本清仓。"}}},
+ explore:{name:"探索废墟",node:"ruin",skill:"stealth",dc:15,days:7,desc:"⚠ 宝物与魔物同在",special:"explore",res:{}},
+ delve:{name:"深入地窖",node:"ruin",skill:"martial",dc:15,days:10,desc:"⚠ 需至少1名同伴",special:"delve"},
+ court:{name:"拜会贵族",node:"silver",skill:"speech",dc:13,days:5,desc:"名利场上的敲门砖",res:{crit:{main:12,gold:50,log:"你的轶事成了晚宴的主题。"},success:{main:6,log:"一位男爵记住了你的名字。"},fail:{main:-2,log:"你在错的人面前讲了个错的笑话。"}}},
+ archive:{name:"查阅典籍",node:"academy",skill:"lore",dc:12,days:4,desc:"知识与传闻",res:{crit:{main:6,flag:"sage_friend",log:"老馆长为你沏了茶：'来找我的人都带着问题。'"},success:{main:3,log:"你抄下了一页有用的传闻。"},fail:{main:1,log:"你在书架间睡着了。"}}},
+ sea_trade:{name:"跑一趟海",node:"port",skill:"lore",dc:13,days:7,desc:"自由城的价差",res:{crit:{gold:130,main:3,log:"海风得意，满舱香料。"},success:{gold:85,log:"货单结清，利润可观。"},fail:{gold:25,log:"风浪耽误了航期，货砸在手里。"}}},
+ g_sup:{name:"讨伐哥布林",node:"goblin",skill:"martial",dc:13,days:6,line:"throne",desc:"讨伐赏金",res:{crit:{gold:100,main:15,log:"你把战旗插在了营门口。赏金与名声一起到账。"},success:{gold:70,main:8,log:"绿皮们四散而逃。"},fail:{gold:20,hp:-4,main:-2,log:"中了埋伏，撤退。"}}},
+ fence:{name:"黑市销赃",node:"goblin",skill:"stealth",dc:12,days:4,line:"gold",desc:"不问来路的买卖",res:{crit:{gold:110,evil:3,log:"哥布林王给你留了下次的口令。"},success:{gold:65,evil:1,log:"赃物出手，现金到账。"},fail:{gold:0,order:-2,log:"买家是暗桩。你连夜出了营。"}}},
+ pilgrim:{name:"朝圣",node:"holy",skill:null,days:2,cost:10,desc:"回满HP，道德+5",special:"pilgrim"},
+ charity:{name:"布施",node:"holy",skill:null,days:2,cost:50,desc:"声誉/影响力+8，道德+5",special:"charity"},
+ dragon_slay:{name:"挑战巨龙",node:"dragon",skill:"martial",dc:18,days:10,desc:"☠ 大失败可能死亡！屠龙者之名",special:"dragon"},
+ dragon_deal:{name:"谈判巨龙的宝藏",node:"dragon",skill:"speech",dc:16,days:7,cost:2000,line:"gold",desc:"☠ 用金币敲开龙穴",special:"dragon_deal"},
+ south_agree:{name:"贸易协定",node:"south",skill:"speech",dc:14,days:5,line:"gold",stage:4,desc:"+40 GP/日",res:{crit:{flag:"south_agree",main:8,log:"公国的大臣们为你的茶点鼓掌。"},success:{flag:"south_agree",log:"丝绸之路为你的商队敞开。"},fail:{main:-3,log:"谈判破裂。南方人嫌弃你的诚意。"}}},
+ spy_north:{name:"刺探军情",node:"north",skill:"stealth",dc:13,days:4,line:"throne",stage:4,desc:"战役敌军力透明",res:{crit:{flag:"north_intel",log:"你数清了要塞每一面旗。"},success:{flag:"north_intel",log:"巡逻换岗的时间尽在掌中。"},fail:{hp:-2,log:"差点没从马厩爬出来。"}}}
+};
+/* ================= 事件池 =================
+ res 字段: gold/main/hp/order/good/evil/chaos/morale/pop/unlock/flag/loot/asset/rmAsset/comp/bond/milPct/timer/log
+ auto: 挂机到期自动选的“最保守”选项序号 */
+const EVENTS=[
+{id:"E001",name:"酒馆争执",line:"shared",minStage:0,w:12,cd:15,auto:2,
+ text:"橡木村的酒馆里，两个佣兵正为一个铜板吵得面红耳赤，眼看就要拔刀。",
+ opts:[
+  {label:"拔刀喝止（武力）",skill:"martial",dc:10,res:{crit:{main:5,order:2,log:"村里人记住了你的名字。"},success:{main:3,order:2,log:"你把刀拍在桌上，两人都坐下了。"},fail:{hp:-2,main:1,log:"挨了一拳，但勇气可嘉。"},critfail:{hp:-3,log:"两人联手把你扔出了酒馆。"}}},
+  {label:"打圆场请酒（口才）",skill:"speech",dc:12,cost:2,res:{crit:{main:6,unlock:"mine_rumor",log:"一句笑话化解了干戈，还听到了矿坑的传闻。"},success:{main:4,unlock:"mine_rumor",log:"一句笑话化解了干戈，还听到矿坑的传闻。"},fail:{log:"你的玩笑冷得像北境的风。"}}},
+  {label:"事不关己",base:{order:-1,log:"你低头喝完了自己的酒。"}}]},
+{id:"E002",name:"商人委托",line:"shared",minStage:0,w:10,cd:12,auto:1,
+ text:"一个绸缎商人需要人手把一车布匹送到灰石镇，'管饭，管几个银币。'",
+ opts:[
+  {label:"接下委托（口才）",skill:"speech",dc:10,res:{crit:{gold:30,main:2,log:"商人一路都在夸你。"},success:{gold:20,main:1,log:"布匹完好送达，工钱到账。"},fail:{gold:5,log:"车陷进了泥坑，工钱扣了一半。"}}},
+  {label:"婉拒",base:{log:"你还有自己的路要走。"}}]},
+{id:"E003",name:"废墟的低语",line:"shared",minStage:0,w:8,cd:25,once:true,auto:2,
+ text:"一个疯疯癫癫的乞丐抓住你的袖子：'黑风山丘的古堡…金子…还有别的东西…'",
+ opts:[
+  {label:"记下位置",base:{unlock:"ruin_rumor",main:2,log:"黑风废墟出现在你的地图边缘。"}},
+  {label:"只身先探一眼（潜行）",skill:"stealth",dc:13,res:{crit:{gold:60,unlock:"ruin_rumor",main:3,log:"你摸走了一尊小金像，还全身而退。"},success:{gold:25,unlock:"ruin_rumor",log:"你在坍塌的门厅捡到一只钱袋。"},fail:{hp:-2,unlock:"ruin_rumor",log:"一支冷箭擦过头皮——里面确实有'别的东西'。"}}},
+  {label:"甩开他",base:{log:"也许是喝多了。"}}]},
+{id:"E004",name:"瘟疫谣言",line:"shared",minStage:0,w:6,cd:30,auto:2,
+ text:"邻村出现了热病，谣传正在商路上蔓延。药商们的眼睛都在放光。",
+ opts:[
+  {label:"出资施药（-10 GP）",cost:10,base:{main:5,good:5,log:"你的名字被写在了善人簿上。"}},
+  {label:"散布恐慌抬价",base:{gold:35,evil:5,main:-2,log:"你在灾荒里赚到了第一桶缺德钱。"}},
+  {label:"只当没听见",base:{log:"谣言和瘟疫一样，总会过去的。"}}]},
+{id:"E005",name:"骰子赌局",line:"shared",minStage:0,w:8,cd:10,auto:2,
+ text:"酒馆角落，一个独眼老兵摇着骰盅：'来一把？'",
+ opts:[
+  {label:"小赌一把（-10 GP）",skill:null,dc:12,cost:10,res:{crit:{gold:45,log:"三个六！独眼老兵的脸比他的眼罩还黑。"},success:{gold:30,log:"你笑着把钱拢进袖子。"},fail:{gold:-10,log:"骰子背弃了你。"},critfail:{gold:-10,hp:-1,log:"老兵指控你出千，吵到动了手。"}}},
+  {label:"重注豪赌（-30 GP）",skill:null,dc:14,cost:30,res:{crit:{gold:150,main:2,log:"满桌皆惊！酒馆为你起哄。"},success:{gold:90,log:"你赢了个满堂彩。"},fail:{gold:-30,log:"一次性的家当。"},critfail:{gold:-30,main:-3,hp:-2,log:"庄家掀了桌子。"}}},
+  {label:"看别人输钱",base:{order:1,log:"独眼老兵冲你冷笑。"}}]},
+{id:"E006",name:"货郎的地图",line:"shared",minStage:0,w:6,cd:30,once:true,auto:1,
+ text:"货郎神秘兮兮地展开一张手绘地图：'十个金币，一处分文不少的宝藏。'",
+ opts:[
+  {label:"买下（-15 GP）",cost:15,base:{unlockPick:["mine_rumor","ruin_rumor"],main:1,log:"地图上的墨迹歪歪扭扭，但值得一看。"}},
+  {label:"不买",base:{log:"多半是画的。"}}]},
+{id:"E007",name:"垂死的骑士",line:"shared",minStage:0,w:6,cd:40,once:true,auto:2,
+ text:"路边躺着一位重伤的骑士，纹章是外省的。他看到你，抬了抬手。",
+ opts:[
+  {label:"救治他（-20 GP）",cost:20,base:{main:6,good:8,flag:"knight_debt",log:"骑士握住你的手：'这份恩情，必有一报。'"}},
+  {label:"搜身（潜行）",skill:"stealth",dc:10,res:{crit:{gold:50,evil:8,order:-2,log:"钱袋、戒指、还有一封情书。"},success:{gold:30,evil:8,order:-2,log:"钱袋沉甸甸。他还有口气，但你已走远。"},fail:{evil:5,main:-3,log:"他醒了，并记住了你的脸。"}}},
+  {label:"绕道走开",base:{evil:2,log:"荒野自有荒野的规矩。"}}]},
+{id:"E008",name:"走失的孩子",line:"shared",minStage:0,w:8,cd:25,auto:1,
+ text:"橡木村的钟敲了三下。孩子进了林子，天黑了还没回来。",
+ opts:[
+  {label:"进林搜寻（学识）",skill:"lore",dc:12,res:{crit:{main:12,good:10,gold:30,log:"你循着断枝找到树洞。全村都在传你的名字。"},success:{main:8,good:8,gold:15,log:"孩子饿得发昏，好在无恙。"},fail:{good:-2,log:"你直到天亮才回来，两手空空。"}}},
+  {label:"召集村民",base:{main:4,good:3,log:"人多力量大，孩子被找到了。"}}]},
+{id:"E009",name:"税吏与寡妇",line:"shared",minStage:0,w:7,cd:20,auto:2,
+ text:"税吏要牵走寡妇最后那头牛抵税。围观的人都低着头。",
+ opts:[
+  {label:"替她求情（口才）",skill:"speech",dc:11,res:{crit:{good:8,main:4,order:2,log:"税吏被你说得面红耳赤，收了三个铜板就走。"},success:{good:8,main:3,order:2,log:"税吏嘟囔着记了笔'欠账'。"},fail:{main:-2,log:"税吏连你一起骂了。"}}},
+  {label:"帮税吏牵牛",base:{gold:25,order:5,evil:3,log:"牛不肯走，你推了一把。眼病在心里生。"}},
+  {label:"低头走过",base:{log:"你数着自己的脚步走完了那条街。"}}]},
+{id:"E010",name:"乞丐的情报",line:"shared",minStage:0,w:6,cd:35,once:true,auto:1,
+ text:"一个机灵的小乞丐凑过来：'五个铜板，告诉你件大事。'",
+ opts:[
+  {label:"给他五个铜板",cost:5,base:{flag:"tip",main:1,log:"'盯紧北边来的马队。'他将来说得没错。"}},
+  {label:"摆手赶走",base:{log:"大事天天都有，铜板不常有。"}}]},
+{id:"E011",name:"狼群袭村",line:"shared",minStage:0,w:9,cd:20,auto:2,
+ text:"冬狼咬死了三只羊。村长在酒馆里悬赏狼皮。",
+ opts:[
+  {label:"组队猎狼（武力）",skill:"martial",dc:12,res:{crit:{gold:35,main:3,log:"你扛回一头冬狼，酒馆为你免单。"},success:{gold:20,main:2,log:"狼群散了，村长付了赏钱。"},fail:{hp:-3,log:"狼比你更快。你退回了村里。"}}},
+  {label:"加固羊圈",base:{good:3,log:"治标，但管用。"}}]},
+{id:"E012",name:"行吟诗人",line:"shared",minStage:0,w:7,cd:15,auto:2,
+ text:"一位行吟诗人拨着琴：'谁肯与我合奏一曲，我把它编进歌里。'",
+ opts:[
+  {label:"与他合演（口才）",skill:"speech",dc:12,res:{crit:{main:5,gold:15,log:"你们的歌传唱到了邻镇。"},success:{main:4,gold:8,log:"掌声和铜板一样响。"},fail:{main:-1,log:"你跑了调。诗人很有礼貌。"}}},
+  {label:"买他一杯酒",cost:3,base:{main:2,log:"他为你编了一段八行诗。"}}]},
+{id:"E013",name:"矿难",line:"shared",minStage:1,w:7,cd:30,need:"mine",auto:0,
+ text:"老矿坑塌了一角，十几个矿工被困在下面。矿主的脸白得像石灰。",
+ opts:[
+  {label:"出钱出力组织营救（-50 GP）",cost:50,base:{main:12,good:10,log:"一夜未眠。矿工们出来时，齐齐向你脱帽。"}},
+  {label:"督促照常开工",base:{gold:80,evil:8,log:"矿主私下塞了钱。产量没掉。名声掉了。"}},
+  {label:"建议封矿",base:{main:-2,log:"矿主当众嘲笑你胆小，私下却派了人手。"}}]},
+{id:"T01",name:"征兵官",line:"throne",minStage:1,w:7,cd:30,auto:1,
+ text:"灰石镇的征兵官拍着你的肩膀：'好身手。想不想混个正规出身？'",
+ opts:[
+  {label:"应征效力",base:{gold:20,main:5,order:3,log:"半个月的军营生活让你学会了列队和忍气吞声。"}},
+  {label:"婉拒",base:{order:-1,log:"'自由惯了。'征兵官耸耸肩。"}}]},
+{id:"T02",name:"老兵的故事",line:"throne",minStage:1,w:7,cd:35,once:true,auto:0,
+ text:"一个断了三条手指的老佣兵在角落独饮。传闻他屠过一头幼龙。",
+ opts:[
+  {label:"请他喝酒听故事（-5 GP）",cost:5,base:{main:4,flag:"vet_tip",log:"他掰着剩下的七根手指讲了一夜。你学到了些门道。"}},
+  {label:"敬他一杯",base:{main:1,log:"他冲你举了举杯。"}}]},
+{id:"T03",name:"哥布林的战书",line:"throne",minStage:2,w:9,cd:30,need:"guild",auto:2,
+ text:"一只绑着战书的箭钉在协会门口：哥布林王要'十个瘦子、十个胖子'作贡品。",
+ opts:[
+  {label:"亲自带队讨伐（武力）",skill:"martial",dc:13,res:{crit:{main:18,gold:100,log:"你把战书钉在了它们的图腾柱上。"},success:{main:12,gold:70,log:"一场恶战，营地易主——至少这一季。"},fail:{hp:-4,main:-3,log:"中了埋伏。你下令撤回。"}}},
+  {label:"发布悬赏（-50 GP）",cost:50,base:{main:10,log:"赏金榜贴出去，穷冒险者们红了眼。"}},
+  {label:"暂且忍耐",base:{main:-5,log:"你把战书锁进了抽屉。会员们的眼神里有些东西变了。"}}]},
+{id:"T04",name:"贵族的招揽",line:"throne",minStage:2,w:6,cd:40,once:true,auto:1,
+ text:"一位男爵的管家深夜到访，放下一袋金币：'大人欣赏您的才能。一些小事，一些默契。'",
+ opts:[
+  {label:"收下金币",base:{gold:200,evil:5,order:3,flag:"corrupt",log:"袋口的封蜡是男爵的纹章。你记住了这种重量。"}},
+  {label:"退回去",base:{main:8,good:5,log:"'替我谢谢大人。'管家离开时在门框上磕了头。"}},
+  {label:"借机要挟（潜行）",skill:"stealth",dc:14,res:{crit:{gold:350,evil:10,order:-2,log:"管家签字画押，额头上全是汗。"},success:{gold:250,evil:10,order:-2,log:"你记下了他的名字、他的把柄、他的恐惧。"},fail:{main:-8,gold:-50,log:"管家冷笑着收回了袋子。你或许上了某份名单。"}}}]},
+{id:"T05",name:"强盗来袭",line:"throne",minStage:3,w:9,cd:25,need:"domain",auto:2,
+ text:"一伙强盗在领地外围扎了营，扬言'秋后收粮，先收人头'。",
+ opts:[
+  {label:"亲自出击（武力）",skill:"martial",dc:13,res:{crit:{main:10,morale:8,log:"你把强盗旗插在了自己的枪尖上。领民夹道欢呼。"},success:{main:6,morale:4,log:"强盗们连夜拔营。"},fail:{morale:-8,main:-3,log:"强盗烧了两座谷仓才走。"}}},
+  {label:"派驻军清剿",base:{main:3,log:"驻军把强盗赶过了界河。"}},
+  {label:"花钱买平安（-300 GP）",cost:300,base:{morale:-10,evil:3,log:"他们收了钱。领民都知道了，也都记住了。"}}]},
+{id:"T06",name:"兵变危机",line:"throne",minStage:4,w:9,cd:30,need:"army",auto:0,
+ text:"军饷拖欠的消息在营里发酵。百夫长们的眼神不对了。",
+ opts:[
+  {label:"立刻补发军饷（-300 GP）",cost:300,base:{main:5,log:"银币落进掌心的声音让营地安静下来。"}},
+  {label:"弹压（武力）",skill:"martial",dc:15,res:{crit:{order:5,main:8,log:"你拎着带头闹事的走到校场中央。万籁俱寂。"},success:{order:5,main:5,log:"一场剑拔弩张，被你压了下去。"},fail:{main:-30,milPct:-20,log:"哗变的火种没有熄灭。营里少了些人。"},critfail:{main:-50,milPct:-35,log:"开小差的成建制地走了。你听见营门在夜里吱呀作响。"}}},
+  {label:"许诺晋升（影响力-100）",base:{main:-100,morale:8,log:"空头衔也能填饱一部分肚子。"}}]},
+{id:"T07",name:"议会弹劾",line:"throne",minStage:5,w:10,cd:40,once:true,auto:2,
+ text:"银月城的议会以'僭越'为名发起弹劾。贵族们难得地团结。",
+ opts:[
+  {label:"买通票仓（口才 -500 GP）",skill:"speech",dc:15,cost:500,res:{crit:{main:25,log:"弹劾案以一票之差流产。那一票花得最值。"},success:{main:15,log:"弹劾案未过半。贵族们悻悻散去。"},fail:{main:-60,log:"钱花了，票没来。有人在收你的钱同时收别人的。"}}},
+  {label:"解散议会",base:{order:10,evil:8,main:-100,log:"士兵把贵族们'请'出了大厅。世界清净了，也危险了。"}},
+  {label:"退让安抚",base:{main:-30,morale:5,log:"你签了几项让步。大厅里响起了礼节性的掌声。"}}]},
+{id:"T08",name:"夜半刺客",line:"throne",minStage:3,w:7,cd:35,auto:1,
+ text:"窗棂轻响。你摸到了枕头下的匕首。",
+ opts:[
+  {label:"正面迎战（武力）",skill:"martial",dc:14,res:{crit:{main:15,gold:100,log:"刺客被你按在地上，怀里滚出一位大人的密令。"},success:{main:10,hp:-4,log:"一番缠斗，刺客破窗而逃。你的臂上添了道疤。"},fail:{hp:-8,main:-5,log:"他比你更熟悉黑暗。"},critfail:{hp:-10,main:-10,log:"你挡下了要害，代价是三根肋骨。"}}},
+  {label:"追查主使（学识）",skill:"lore",dc:13,res:{crit:{gold:150,main:10,log:"线头一路牵到了一位男爵的钱庄。你收下了封口费。"},success:{main:8,log:"凶手画影图形，贴满了城墙。"},fail:{main:-3,log:"线索断在了一具浮尸上。"}}},
+  {label:"闭门不出",base:{main:-5,log:"刺客没有再来。但你知道，你知道。"}}]},
+{id:"T09",name:"流民过境",line:"throne",minStage:3,w:7,cd:25,need:"domain",auto:2,
+ text:"一队流民到了领地边界，老弱相扶，饿殍将现。",
+ opts:[
+  {label:"开仓安置",base:{pop:100,good:8,morale:-2,log:"他们留下来了，成了你的领民。粮仓见了底。"}},
+  {label:"施粥遣散（-100 GP）",cost:100,base:{good:5,main:3,log:"他们吃饱了上路。有人回头喊了声'好人'。"}},
+  {label:"驱离",base:{evil:5,morale:-2,log:"卫兵的枪杆比雨点更冷。"}}]},
+{id:"G01",name:"货压港口",line:"gold",minStage:1,w:9,cd:25,auto:1,
+ text:"你的三车棉布被港口税吏扣下，'例行检查'。你知道这话什么意思。",
+ opts:[
+  {label:"打点税吏（潜行 -15 GP）",cost:15,skill:"stealth",dc:12,res:{crit:{gold:30,flag:"smuggle_route",log:"税吏收了钱，还告诉你下月的查验班期。"},success:{log:"银子转手，关卡形同虚设。"},fail:{gold:-15,order:-2,log:"他收了钱，货却还压着。你学到了一课。"},critfail:{gold:-15,main:-10,log:"他反手把你的名字记进了'重点关照'名册。"}}},
+  {label:"照章补税（口才）",skill:"speech",dc:10,res:{success:{gold:-20,order:2,log:"按律完税。慢，但睡得着。"},fail:{gold:-45,log:"罚金、滞纳金、保管费……章没盖完，钱没了。"}}},
+  {label:"静观其变",base:{gold:-25,log:"滞港费一天一个价。你最终还是缴了。"}}]},
+{id:"G02",name:"伙计被挖角",line:"gold",minStage:1,w:8,cd:25,auto:0,
+ text:"隔壁的绸缎庄双倍工钱挖走了你最伶俐的伙计，还带走了半个客户名单。",
+ opts:[
+  {label:"加钱留人（-30 GP）",cost:30,base:{flag:"clerk_kept",main:2,log:"'人往高处走。'你把'高处'抬高了三十个金币。"}},
+  {label:"随他去",base:{main:-3,flag:"clerk_gone",log:"他走时红了眼眶。生意归生意。"}},
+  {label:"连人带名单挖回来（口才）",skill:"speech",dc:12,res:{crit:{main:5,gold:20,log:"你不光留住了他，还顺手带走绸缎庄半张客路。"},success:{main:3,log:"他回来了，还带着愧疚加倍的干劲。"},fail:{main:-5,log:"两头都没讨好。"}}}]},
+{id:"G03",name:"竞拍风波",line:"gold",minStage:3,w:7,cd:35,once:true,auto:1,
+ text:"破产男爵的最后一批好货开拍。对面绸缎庄的老板冲你举了举号牌，笑得很挑衅。",
+ opts:[
+  {label:"抬到底（-500 GP）",cost:500,base:{main:8,flag:"auction_win",log:"绸缎庄老板脸色铁青地放下了号牌。这口气，值。"}},
+  {label:"让他三分",base:{main:-3,log:"你收了号牌。下次，下次让他好看。"}},
+  {label:"搅局（潜行）",skill:"stealth",dc:13,res:{success:{main:5,log:"拍卖师念错三次号牌，对面拍到的东西缺斤短两。"},fail:{main:-10,order:-3,log:"你的小动作被当场点破。行会的人都在场。"}}}]},
+{id:"G04",name:"挤兑前夜",line:"gold",minStage:4,w:10,cd:30,need:"bank",auto:0,
+ text:"有人在银行门口排队了。先是三个人，现在是三十个。",
+ opts:[
+  {label:"注资平息（-2000 GP）",cost:2000,base:{main:10,log:"银子堆上柜台，队伍散了。人心比黄金沉。"}},
+  {label:"宣布限兑",base:{order:3,main:-15,log:"铁链锁上了大门。第二天，排队的人翻了一倍。"}},
+  {label:"卖掉银行",base:{gold:15000,rmAsset:"bank",main:-20,log:"你数着钱走出大厅，人群在你身后欢呼——为新的主人。"}}]},
+{id:"G05",name:"寡头的茶会",line:"gold",minStage:2,w:8,cd:20,auto:0,
+ text:"行会的寡头们每月一聚。请柬是口头的：'来喝口茶。'",
+ opts:[
+  {label:"空手赴会",base:{main:5,log:"茶过三巡，你听懂了三个暗示。"}},
+  {label:"带稀罕货做礼（-100 GP）",cost:100,base:{main:12,flag:"oligarch_friend",log:"你带去了一小盒龙脊红茶。座次向前挪了一位。"}},
+  {label:"闭门不出",base:{main:-3,log:"寡头们注意到你的缺席。这本身就是一种表态。"}}]},
+{id:"G06",name:"国王想借钱",line:"gold",minStage:4,w:8,cd:35,auto:1,
+ text:"王室的内库总管深夜来访：'殿下需要一笔周转。利息，好商量。'",
+ opts:[
+  {label:"借（-5000 GP → 国债）",cost:5000,base:{bond:5000,main:20,order:5,log:"盖着御玺的债券收进了保险柜。这才叫抵押品。"}},
+  {label:"婉拒",base:{main:-10,log:"总管的脸皮抽了一下。王室不缺债主，但缺脸。"}},
+  {label:"顺势讨个爵位（口才）",skill:"speech",dc:15,res:{crit:{main:35,flag:"titled",log:"'贸易男爵'。你的姓氏前多了两个字，和一笔好生意。"},success:{main:20,flag:"titled",log:"一个虚衔，一句笑话，一张债券。你笑着全部收下。"},fail:{main:-20,log:"'商人就是商人。'总管笑着离席。"}}}]},
+{id:"G07",name:"粮价风暴",line:"gold",minStage:1,w:8,cd:25,auto:2,
+ text:"粮食歉收的风声一夜传遍三城。谷仓的钥匙突然变得很烫手。",
+ opts:[
+  {label:"囤到下月（-200 GP）",cost:200,base:{timer:{days:30,fx:{gold:550}},main:2,log:"你锁上谷仓，数着日子。"}},
+  {label:"连夜清仓",base:{gold:150,main:-3,log:"落袋为安。第二天，粮价又涨了一倍。"}},
+  {label:"静观其变",base:{log:"你决定按住钱袋。粮价起起落落，你都见过。"}}]},
+{id:"G08",name:"走私的路子",line:"gold",minStage:1,w:7,cd:30,auto:1,
+ text:"酒馆里的独眼水手压低声音：'有条绕开关卡的水路，要买吗？'",
+ opts:[
+  {label:"买下航路图（-80 GP）",cost:80,base:{flag:"smuggle_route",main:2,log:"暗礁、航标、巡船换岗的时辰。都在图上。"}},
+  {label:"举报关卡",base:{order:5,main:4,log:"水手进了拘留所。税吏们开始叫得出你的名字。"}},
+  {label:"亲自走一趟（潜行）",skill:"stealth",dc:13,res:{crit:{gold:250,order:-3,log:"神不知鬼不觉，利润全进自己口袋。"},success:{gold:160,order:-3,log:"船底擦过暗礁，货稳稳上岸。"},fail:{gold:-100,main:-10,log:"巡逻船截住了你。这学费有点贵。"}}}]},
+{id:"G09",name:"品质事故",line:"gold",minStage:1,w:8,cd:30,need:"workshop",auto:0,
+ text:"这批货出了岔子：一批药膏让三个主顾起了疹子。消息还没传开。",
+ opts:[
+  {label:"全数召回（-150 GP）",cost:150,base:{main:5,good:3,log:"你挨家挨户登门致歉。麻烦，但传开后是活招牌。"}},
+  {label:"封锁消息（潜行）",skill:"stealth",dc:12,res:{success:{log:"三份封口协议，一个铜板没登账。"},fail:{main:-25,order:-3,log:"流言比药膏扩散得更快。行会记了你一笔。"}}},
+  {label:"加倍赔付（-100 GP）",cost:100,base:{good:8,main:3,log:"你赔了钱，也赚了口碑。"}}]},
+{id:"G10",name:"价格战",line:"gold",minStage:1,w:8,cd:25,auto:2,
+ text:"绸缎庄老板把价牌挂到了成本价，冲你嘿嘿一笑：'看谁先撑不住。'",
+ opts:[
+  {label:"烧钱对轰（-300 GP）",cost:300,base:{flag:"price_war_won",main:5,log:"三个月后，绸缎庄挂出了'旺铺转让'。"}},
+  {label:"错位经营（学识）",skill:"lore",dc:13,res:{success:{main:8,log:"他卖他的大路货，你卖你的独一份。"},fail:{main:-3,log:"高端客源没接住，旧客源也跑了一半。"}}},
+  {label:"谈谈合并（口才 -500 GP）",cost:500,skill:"speech",dc:12,res:{success:{main:10,flag:"merged",log:"你把价牌换成了同一块。从此市场只有一个声音。"},fail:{main:-5,gold:-200,log:"谈判破裂，还白白让他摸了底。"}}}]},
+{id:"M1",name:"瘟疫之年",line:"shared",minStage:1,w:3,cd:200,once:true,monthly:true,auto:2,
+ text:"热病顺着商路蔓延。药草有价无市，街上蒙着口罩的眼睛满是无声的恳求。",
+ opts:[
+  {label:"捐药施救（-100 GP）",cost:100,base:{main:8,good:8,log:"你的名字被写进修道院的感恩弥撒。"}},
+  {label:"药草生意照做",base:{gold:200,evil:5,flag:"plague",timer:{days:60,fx:{}},log:"药价一日三涨。你的账房在笑。"}},
+  {label:"闭门自保",base:{flag:"plague",timer:{days:60,fx:{}},hp:-2,log:"你还是染了点风寒。整条街都在咳嗽。"}}]},
+{id:"M2",name:"老国王驾崩",line:"shared",minStage:2,w:3,cd:200,once:true,monthly:true,auto:1,
+ text:"银月城的钟声响了整夜。老国王死了，没有留下明确的继承人。",
+ opts:[
+  {label:"静待其变",base:{main:3,flag:"silver_chaos",timer:{days:30,fx:{}},log:"贵族们连夜进了城。一场大戏正在换幕。"}},
+  {label:"派人打点新贵",base:{gold:-100,main:8,flag:"silver_chaos",timer:{days:30,fx:{}},log:"你赌了几个人物。他们暂时都还需要朋友。"}}]}
+];
+/* ================= 状态与存档 ================= */
+const SAVE_KEY="dnd_throne_gold_v1";
+const MONTHS=["融雪","泥泞","花落","雨季","长日","日歌","收获","果月","霜降","凋零","暗影","岁末"];
+let S=null,CREATING=false;
+function log(t,cls){S.log.unshift({d:S.day,t,cls:cls||""});if(S.log.length>140)S.log.length=140}
+function monthStr(){const m=MONTHS[Math.floor((S.day-1)/30)%12];const y=Math.floor((S.day-1)/360)+1;return`第${S.day}日 · ${y}年${m}月`}
+function newState(cfg){
+ const al=ALIGN[cfg.align],c=CLASSES[cfg.cls],r=RACES[cfg.race];
+ const st={ver:1,day:1,speed:1,paused:false,seed:ri(1,999999999),
+  line:cfg.line,name:cfg.name,race:cfg.race,cls:cfg.cls,align:cfg.align,
+  order:al.order,good:al.good,
+  gold:(Number(c.gold)||10)*(al.mod==="richStart"?2:1),infl:r.startInfl||0,
+  hpMax:c.hpMax||10,gear:[],assets:[],comps:[],unlocked:[],flags:{},timers:[],
+  org:null,domain:null,army:null,occupied:{},monop:{},bonds:0,guard:0,milcap:0,
+  policies:{guild:null,edict:null,state:null},
+  actions:[],pending:[],evCd:{},evDone:{},contest:null,stage:0,stageReady:null,
+  debtDays:0,stats:{rolls:0,crits:0,fails:0,big:0},ended:null,log:[],
+  tut:0,
+  nextEvDay:1+ri(1,3),lastReal:Date.now()};
+ st.hp=st.hpMax;
+ for(const g of (c.gear||[])) if(g) st.gear.push(g);
+ return st;
+}
+let WIPING=false;
+function save(){if(!S||WIPING)return;S.lastReal=Date.now();try{localStorage.setItem(SAVE_KEY,JSON.stringify(S))}catch(e){}}
+function loadSave(){try{const s=localStorage.getItem(SAVE_KEY);return s?JSON.parse(s):null}catch(e){return null}}
+function wipeSave(){WIPING=true;try{localStorage.removeItem(SAVE_KEY)}catch(e){}}
+
+/* ================= 节点解锁 ================= */
+function setFlag(f){if(S.flags[f])return;S.flags[f]=true;
+ const m={mine_rumor:"老矿坑",ruin_rumor:"黑风废墟"};
+ if(m[f])log("🗺 传闻落定：「"+m[f]+"」出现在你的地图边缘。","epic")}
+function nodeUnlocked(id){const n=NODES[id];
+ if(S.unlocked.includes(id))return true;
+ if(n.auto){S.unlocked.push(id);return true}
+ if(n.stage&&S.stage>=n.stage){S.unlocked.push(id);log("🗺 新地域揭示："+n.name,"epic");return true}
+ if(n.flag&&S.flags[n.flag]){S.unlocked.push(id);log("🗺 新地域揭示："+n.name,"epic");return true}
+ if(id==="black"&&(CLASSES[S.cls].blackmarket||S.good<=-30)){S.unlocked.push(id);log("🗺 有人在码头塞给你一张潮汐表——黑市岛。","epic");return true}
+ if(id==="port"&&n.portEarly&&S.line==="gold"&&S.stage>=1&&CLASSES[S.cls].goldFx&&CLASSES[S.cls].goldFx.portEarly){S.unlocked.push(id);log("🗺 行商的老关系：港口自由城提前开门。","epic");return true}
+ return false}
+
+/* ================= 掷骰 ================= */
+function skillBonus(skill){if(!skill)return 0;let b=0;
+ const r=RACES[S.race],c=CLASSES[S.cls];
+ b+=(r.skills&&r.skills[skill])||0;b+=(c.skills&&c.skills[skill])||0;
+ const al=ALIGN[S.align];if(al.skills)b+=al.skills[skill]||0;
+ for(const g of S.gear){const it=GEAR[g];if(!it)continue;if(it.skill===skill)b+=it.bonus||0;if(it.lore&&skill==="lore")b+=it.lore}
+ for(const cp of S.comps){const cc=COMP[cp];if(cc&&cc.skills)b+=cc.skills[skill]||0}
+ if(S.flags.vet_tip&&skill==="martial")b+=1;
+ if(S.policies.guild==="intel"&&(skill==="lore"||skill==="stealth"))b+=1;
+ if(S.assets.includes("intel_net"))b+=1;
+ if(S.hp<=Math.ceil(S.hpMax/3))b-=1;
+ return b}
+function rollCheck(skill,dc,extra){
+ let mods=(skill?skillBonus(skill):0)+(extra||0)+(RACES[S.race].roll||0);
+ if(S.flags.tip){mods+=1;delete S.flags.tip;log("🎲 小乞丐的情报灵验了(+1)。")}
+ if(S.flags.inspire){mods+=2;delete S.flags.inspire;log("✨ 激励骰生效：+2。")}
+ let r=d20();
+ if(RACES[S.race].lucky&&r===1){const r2=d20();log(`🎲 半身人幸运：把 1 重掷成 ${r2}`);r=r2}
+ const total=r+mods;let out;
+ if(r===20)out="crit";else if(r===1)out="critfail";
+ else if(total>=dc+5)out="crit";else if(total>=dc)out="success";
+ else if(total<=dc-5)out="critfail";else out="fail";
+ S.stats.rolls++;if(out==="crit"){S.stats.crits++;S._cf=0}
+ if(out==="critfail"&&S.flags.lucky_coin){delete S.flags.lucky_coin;
+  out="fail";log("🪙 幸运币碎裂了——命运松了口。大失败降格为失败。")}
+ if(out==="critfail"){S.stats.fails++;S._cf=(S._cf||0)+1;
+  if(S._cf>=2){S.flags.inspire=true;S._cf=0;log("✨ 连续的挫折教会了你什么。获得激励骰(下次+2)。","epic")}}
+ log(`🎲 [${skill?SK_LBL[skill]:"运气"}] ${r}${mods?sgn(mods):""} = ${total} vs DC${dc} → ${OUT_NAME[out]}`,
+  out==="crit"?"epic":out==="critfail"?"bad":"");
+  if(out==="crit")banner("🎲 骰出 "+r+" —— 大成功！");
+  if(out==="critfail")banner("💀 骰出 "+r+" —— 大失败…");
+ return out}
+const SK_LBL={martial:"武力",speech:"口才",lore:"学识",stealth:"潜行",command:"统御"};
+
+/* ================= 效果结算 ================= */
+/* ---------- 资源飘字引擎 ---------- */
+function floaty(txt,cls,anchorId){
+ try{
+  const host=document.createElement("div");
+  host.className="floaty "+(cls||"gold");
+  host.textContent=txt;
+  let x=innerWidth/2,y=90;
+  if(anchorId){const el=document.querySelector(anchorId);
+   if(el){const r=el.getBoundingClientRect();x=r.left+r.width/2;y=r.top-4}}
+  host.style.left=Math.round(x)+"px";host.style.top=Math.round(y)+"px";
+  host.style.transform="translateX(-50%)";
+  document.body.appendChild(host);
+  setTimeout(()=>host.remove(),1800)}catch(e){}}
+function flashChip(sel){
+ try{const el=document.querySelector(sel);
+  if(el){el.classList.remove("flash");void el.offsetWidth;el.classList.add("flash")}}catch(e){}}
+function resFloat(res){
+ if(!res)return;
+ if(res.gold>0){floaty("💰+"+res.gold,"gold",".chip:not(.mainRes) b")}
+ if(res.gold<0){floaty("💰"+res.gold,"hp",".chip:not(.mainRes) b")}
+ if(res.main>0){floaty(LINES[S.line].icon+"+"+res.main,"infl",".chip.mainRes b")}
+ if(res.main<0){floaty(LINES[S.line].icon+res.main,"hp",".chip.mainRes b")}
+ if(res.hp<0){floaty("❤"+res.hp,"hp",".bar.hp")}
+ if(res.hp>0){floaty("❤+"+res.hp,"infl",".bar.hp")}
+ if(res.gold)flashChip(".chip:not(.mainRes)");
+ if(res.main)flashChip(".chip.mainRes")}
+function applyResult(res){if(!res)return;resFloat(res);
+ if(res.gold){S.gold=Math.max(0,S.gold+res.gold)}
+ if(res.main){S.infl=Math.max(0,S.infl+res.main)}
+ if(res.hp){let h=res.hp;if(h<0&&S.comps.includes("moelle"))h+=1;S.hp=clamp(S.hp+h,0,S.hpMax)}
+ if(res.order)S.order=clamp(S.order+res.order,-100,100);
+ if(res.chaos)S.order=clamp(S.order-res.chaos,-100,100);
+ if(res.good)S.good=clamp(S.good+res.good,-100,100);
+ if(res.evil)S.good=clamp(S.good-res.evil,-100,100);
+ if(res.morale&&S.domain)S.domain.morale=clamp(S.domain.morale+res.morale,0,100);
+ if(res.pop&&S.domain)S.domain.pop+=res.pop;
+ if(res.unlock)setFlag(res.unlock);
+ if(res.unlockPick){for(const f of res.unlockPick){if(!S.flags[f]){setFlag(f);break}}}
+ if(res.flag){if(typeof res.flag==="string")setFlag(res.flag);else for(const k in res.flag)S.flags[k]=res.flag[k]}
+ if(res.loot&&!S.gear.includes(res.loot)){S.gear.push(res.loot);log("🎁 获得："+GEAR[res.loot].name,"epic")}
+ if(res.asset&&!S.assets.includes(res.asset)){S.assets.push(res.asset)}
+ if(res.rmAsset)S.assets=S.assets.filter(a=>a!==res.rmAsset);
+ if(res.comp&&!S.comps.includes(res.comp)){S.comps.push(res.comp);log("🤝 "+COMP[res.comp].name+" 加入了你。","epic")}
+ if(res.bond)S.bonds+=res.bond;
+ if(res.milcap)S.milcap+=res.milcap;
+ if(res.milPct&&S.army)for(const u in S.army){S.army[u]=Math.max(0,Math.floor(S.army[u]*(100+res.milPct)/100))}
+ if(res.timer)S.timers.push({days:res.timer.days,fx:res.timer.fx||{},unflag:res.flag||null});
+ if(res.log)log(res.log,(res.main>0||res.gold>0)?"good":((res.hp&&res.hp<0)?"bad":""))}
+
+/* ================= 事件调度 ================= */
+function needOk(k){switch(k){
+ case"guild":return!!S.org;case"domain":return!!S.domain;case"army":return!!S.army;
+ case"bank":return S.assets.includes("bank");
+ case"workshop":return S.assets.includes("forge")||S.assets.includes("apothecary");
+ case"mine":return nodeUnlocked("mine")&&S.stage>=1;default:return true}}
+function canShow(e){
+ if(e.line!=="shared"&&e.line!==S.line)return false;
+ if(e.minStage>S.stage)return false;
+ if(e.once&&S.evDone[e.id])return false;
+ if(S.day-(S.evCd[e.id]||-999)<(e.cd||20))return false;
+ if(e.need&&!needOk(e.need))return false;
+ return true}
+function maybeEvent(){
+ if(S.day<S.nextEvDay||S.pending.length>=2)return;
+ let pool=EVENTS.filter(e=>canShow(e)&&!S.pending.some(p=>p.id===e.id));
+ const wild=ALIGN[S.align].mod==="wild";
+ if(pool.length){
+  let tot=0;for(const e of pool)tot+=e.w*(wild?1.2:1);
+  let x=rng()*tot,ev=pool[0];
+  for(const e of pool){x-=e.w*(wild?1.2:1);if(x<=0){ev=e;break}}
+  S.evCd[ev.id]=S.day;S.pending.push({id:ev.id,dl:7});
+  log("📜 新的事件："+ev.name)}
+ S.nextEvDay=S.day+3+ri(0,5)}
+function monthlyEvent(){const pool=EVENTS.filter(e=>e.monthly&&canShow(e)&&!S.pending.some(p=>p.id===e.id));
+ if(pool.length&&rng()<0.4){const ev=choice(pool);S.evCd[ev.id]=S.day;S.pending.push({id:ev.id,dl:7});log("📜 风云事件："+ev.name)}}
+function autoResolve(id){const ev=EVENTS.find(e=>e.id===id);if(!ev)return;
+ let i=(ev.auto!=null&&ev.auto<ev.opts.length)?ev.auto:0;
+ const o=ev.opts[i];log("⏳ 你迟迟未决，时间替你做了选择："+ev.name,"bad");
+ S.evDone[id]=true;
+ if(o.base)applyResult(o.base);
+ else if(o.res)applyResult(o.res.fail||o.res.critfail||{})}
+
+/* ================= 主动行动 ================= */
+function actionSlots(){return 1+(S.stage>=1?2:0)+(S.stage>=2?2:0)}
+function startAction(key){const d=ACTIONS[key];
+ if(d.line&&d.line!==S.line)return;
+ if(d.stage&&S.stage<d.stage)return;
+ if(S.actions.length>=actionSlots()){log("⚠ 行动队列已满。");return}
+ if(S.actions.some(a=>a.key===key)){log("⚠ 同一行动已在进行。");return}
+ if(d.cost&&S.gold<d.cost){log("💰 金币不足。");return}
+ let days=d.days;
+ const c=CLASSES[S.cls];if(c.fast)days=Math.ceil(days*(1-c.fast));
+ if(S.gear.includes("mount"))days=Math.ceil(days*0.9);
+ if(d.cost)S.gold-=d.cost;
+ S.actions.push({key,node:d.node,left:days,total:days});
+ log("▶ 开始行动："+d.name+"（约"+days+"日）");
+ save();renderAll()}
+function resolveAction(a){const d=ACTIONS[a.key];
+ S.flags.first_resolved=true;
+ if(d.special){specialAction(d);return}
+ if(d.skill==null){applyResult(d.res.success||{});return}
+ const out=rollCheck(d.skill,d.dc,tradegear(d));
+ applyResult(d.res[out]||{})}
+function tradegear(d){let e=0;
+ if(S.gear.includes("ledger")&&(d.key==="trade_run"||d.key==="iron_chain"))e+=1;
+ if(S.assets.includes("hall")&&(d.key==="iron_chain"))e+=1;
+ if(S.flags.smuggle_route&&(d.key==="fence"||d.key==="sea_trade"))e+=1;
+ return e}
+function specialAction(d){const out=d.skill!=null?rollCheck(d.skill,d.dc,d.key==="dragon"?(S.flags.dragon_slayers? -3:0):0):null;
+ switch(d.special){
+  case"rest":S.gold=Math.max(0,S.gold-0);S.hp=S.hpMax+(CLASSES[S.cls].heal?0:0);log("🛖 休整完毕，体力全满。");break;
+  case"recruit":{const cand=COMP_ALL.filter(c=>!S.comps.includes(c));
+   if(!cand.length){log("招募告示在风里挂了两天，无人应征。");break}
+   const c=choice(cand);const r=rollCheck("speech",10);
+   if(r==="crit"||r==="success"||S.gold>=COMP[c].wage*8){S.comps.push(c);log("🤝 "+COMP[c].name+" 收下了你的酒，决定跟你走。","epic")}
+   else log(COMP[c].name+" 摇了摇头。酒是好的，钱不够。");break}
+  case"explore":{if(out==="crit"){const loot=GEAR_SHOP.filter(g=>!S.gear.includes(g));applyResult({gold:80});
+    if(loot.length)applyResult({loot:choice(loot),log:"在坍塌的祭坛下，你摸到了一柄仍泛着微光的兵器。"})}
+   else if(out==="success"){applyResult({gold:50});if(rng()<0.5&&!S.gear.includes("iron_sword"))applyResult({loot:"iron_sword",log:"你从骸骨怀里解下一柄铁剑。"})}
+   else if(out==="fail")applyResult({hp:-4,log:"陷阱、毒雾和一声远处的咆哮。你两手空空地退了回来。"});
+   else applyResult({hp:-6,gold:-30,log:"你被守陵的什么东西追了三里地，钱袋跑丢在路上。"});break}
+  case"delve":{if(!S.comps.length){log("⚠ 没有同伴，你最终没敢独自下到地窖最深处。");break}
+   if(out==="crit")applyResult({flag:"enchant_clue",gold:200,main:5,log:"地窖尽头是一间附魔工坊的残骸——你抄下了整墙符文。"});
+   else if(out==="success")applyResult({gold:150,main:2,log:"沉重的石棺里躺着一位古国的税官。他终生敬业。"});
+   else if(out==="fail")applyResult({hp:-6,log:"骸骨卫兵。你且战且退。"});
+   else applyResult({hp:-8,gold:-50,log:"塌方把你埋了半截，同伴把你刨了出来。钱袋没能刨出来。"});break}
+  case"pilgrim":S.hp=S.hpMax;S.good=clamp(S.good+5,-100,100);log("⛪ 圣泉的水冰冷刺骨。你的伤好了，心也更静了。");break;
+  case"charity":applyResult({main:8,good:5,log:"你散出的面包换回了比面包更重的东西。"});break;
+  case"dragon":{
+   if(out==="crit")applyResult({flag:"dragon_slayer",gold:3000,main:200,hp:-6,log:"屠龙者。这个词从今往后跟定你了。"});
+   else if(out==="success")applyResult({main:100,gold:1000,hp:-6,log:"你带着一袋龙鳞和半条命下了山。吟游诗人已在村口等你。"});
+   else if(out==="fail")applyResult({hp:-8,main:-20,log:"龙息燎过你的后背。你侥幸挂在云梯上，没有掉下去。"});
+   else applyResult({hp:-99,log:"龙脊山的风，替世界收回了一个过于响亮的名字。"});break}
+  case"dragon_deal":{
+   if(out==="crit")applyResult({gold:6000,main:30,flag:"dragon_deal",log:"巨龙收下金币，用爪子推回一箱古代银币作为找零。"});
+   else if(out==="success")applyResult({gold:4000,main:15,log:"巨龙嗅了嗅金币的成色，不太情愿地掀开了宝库的一角。"});
+   else if(out==="fail")applyResult({main:-10,log:"龙眯起眼睛：'你的数目，配不上你的胆子。'金币没收。"});
+   else applyResult({hp:-5,main:-30,gold:-200,log:"巨龙的幽默感和它的火一样烫。你连滚带爬地出了龙穴。"});break}
+ }}
+/* 龙事件后援：龙脊山传闻事件解锁挑战 */
+function dragonReady(){return S.stage>=4&&nodeUnlocked("dragon")}
+
+/* ================= 经济引擎 ================= */
+function assetIncome(){let inc=0;
+ for(const a of S.assets){const d=ASSETS[a];if(!d)continue;let v=d.income||0;
+  if(!v)continue;
+  if(S.race==="dwarf"&&(a==="mine_contract"||a==="forge"))v*=1.25;
+  if(S.cls==="alchemist"&&a==="apothecary")v*=1.3;
+  if(S.cls==="smith"&&a==="forge")v*=1.2;
+  if(S.cls==="bard"&&(a==="shop"||a==="hall"))v*=1.25;
+  if(S.cls==="merchant"&&a==="caravan")v*=1.25;
+  if(S.comps.includes("amber")&&a==="caravan")v*=1.15;
+  if(S.comps.includes("sailas")&&a==="fleet")v*=1.25;
+  if(S.flags.plague&&a==="apothecary")v*=2;
+  if(S.flags.shop_gray||S.flags.found_wealth)v*=1.1;
+  if(S.flags.price_war_won)v*=1.1;
+  if(S.policies.guild==="commerce")v*=1.1;
+  if(S.policies.edict==="trade_f")v*=1.2;
+  if(S.policies.state==="franchise"){if(S.monopolized&&Object.values(S.monopolized).some(x=>x))v*=1.25}
+  inc+=v}
+ return Math.round(inc)}
+function contractIncome(){let c=0;
+ if(S.flags.iron_contract)c+=12;
+ if(S.flags.south_agree)c+=40;
+ if(S.org&&S.line==="gold")c+=25;
+ if(S.comps.includes("moying")&&S.org)c+=3;
+ if(S.policies.state==="tariff"&&S.org)c+=12;
+ return c}
+function rentIncome(){if(!S.domain)return 0;let v=S.domain.pop*0.3*S.domain.tax*(S.line==="gold"?10:1);
+ if(S.domain.buildings.includes("market_b")&&S.line==="throne")v*=1.2;
+ if(S.domain.buildings.includes("fields")&&S.line==="gold")v*=1.2;
+ return Math.round(v)}
+function tributeIncome(){let n=Object.keys(S.occupied).length;if(!n)return 0;
+ return n*(S.line==="gold"?30:15)}
+function wages(){let w=0;
+ for(const c of S.comps)w+=COMP[c].wage;
+ if(S.army)for(const u in S.army){let m=UNITS[u].maint*S.army[u];if(S.flags.army_merc)m*=0.7;
+  if(S.policies.edict==="mobilize")m*=1.5;w+=m}
+ if(S.line==="gold")w+=[0,5,15,35][S.guard];
+ for(const b of (S.domain?S.domain.buildings:[]))w+=(BUILDINGS[b].maint||0);
+ let cut=1;
+ if(S.comps.includes("barn"))cut*=0.9;
+ if(S.cls==="smith"&&S.line==="gold")cut*=0.8;
+ return Math.round(w*cut)}
+function mainRate(){let v=0,m=1;
+ const r=RACES[S.race],c=CLASSES[S.cls];
+ v+=S.comps.length*0.3;
+ if(S.comps.includes("lyreen"))m*=1.2;
+ if(S.org)v+=S.org.members*(S.line==="gold"?0.1:0.15);
+ if(S.domain)v+=S.domain.morale*(S.line==="gold"?0.05:0.02);
+ if(S.army&&S.line==="throne")v+=milPow()*0.03;
+ if(S.assets.includes("hall"))v+=0.5;
+ if(S.flags.guild_new)v+=0.5;
+ if(S.flags.consort_family)v+=1;
+ if(S.flags.found_charity&&S.line==="throne")m*=1.2;
+ if(S.flags.prince_crown)v+=2;
+ if(S.line==="gold"&&S.monopolized)for(const k in S.monopolized)if(S.monopolized[k])v+=1.5;
+ if(r.mainPlus)m+=r.mainPlus;
+ if(S.line==="throne"&&c.throne&&c.throne.mainPlus)m+=c.throne.mainPlus;
+ if(S.policies.guild==="charity"&&S.line==="throne")m+=0.3;
+ if(S.policies.state==="tariff")v+=1;
+ return Math.round(v*m*10)/10}
+function buildLedger(){
+ const L=[];
+ const ln=LINES[S.line].mainName;
+ /* ---- 收入：逐项产业 ---- */
+ for(const a of S.assets){const d=ASSETS[a];if(!d)continue;let v=d.income||0;
+  if(!v)continue;
+  if(S.race==="dwarf"&&(a==="mine_contract"||a==="forge"))v*=1.25;
+  if(S.cls==="alchemist"&&a==="apothecary")v*=1.3;
+  if(S.cls==="smith"&&a==="forge")v*=1.2;
+  if(S.cls==="bard"&&(a==="shop"||a==="hall"))v*=1.25;
+  if(S.cls==="merchant"&&a==="caravan")v*=1.25;
+  if(S.comps.includes("amber")&&a==="caravan")v*=1.15;
+  if(S.comps.includes("sailas")&&a==="fleet")v*=1.25;
+  if(S.flags.plague&&a==="apothecary")v*=2;
+  if(S.flags.shop_gray||S.flags.found_wealth)v*=1.1;
+  if(S.flags.price_war_won)v*=1.1;
+  if(S.policies.guild==="commerce")v*=1.1;
+  if(S.policies.edict==="trade_f")v*=1.2;
+  L.push({k:"产业·"+d.name,v:Math.round(v)})}
+ /* ---- 收入：契约与组织 ---- */
+ if(S.flags.iron_contract)L.push({k:"契约·铁矿供货",v:12});
+ if(S.flags.south_agree)L.push({k:"协定·南方商路",v:40});
+ if(S.org&&S.line==="gold")L.push({k:"行会·契约板月结",v:25});
+ if(S.comps.includes("moying")&&S.org)L.push({k:"雇员·墨影的账房",v:3});
+ if(S.policies.state==="tariff"&&S.org)L.push({k:"国策·关税同盟",v:12});
+ /* ---- 收入：领地与占领 ---- */
+ if(S.domain){let v=S.domain.pop*0.3*S.domain.tax*(S.line==="gold"?10:1);
+  if(S.domain.buildings.includes("market_b")&&S.line==="throne")v*=1.2;
+  if(S.domain.buildings.includes("fields")&&S.line==="gold")v*=1.2;
+  if(v>0)L.push({k:(S.line==="gold"?"庄园":"领地")+"·"+(S.line==="gold"?"地租":"税收"),v:Math.round(v)})}
+ const occN=Object.keys(S.occupied).length;
+ if(occN)L.push({k:"占领贡赋 ×"+occN,v:occN*(S.line==="gold"?30:15)});
+ /* ---- 支出 ---- */
+ for(const c of S.comps)L.push({k:"同伴·"+COMP[c].name.split("(")[0]+"日薪",v:-COMP[c].wage});
+ if(S.army)for(const u in S.army){if(!S.army[u])continue;let m=UNITS[u].maint*S.army[u];
+  if(S.flags.army_merc)m*=0.7;if(S.policies.edict==="mobilize")m*=1.5;
+  L.push({k:"军饷·"+UNITS[u].name+"×"+S.army[u],v:-Math.round(m)})}
+ if(S.line==="gold"&&S.guard>0)L.push({k:"护卫队等级"+S.guard,v:-[0,5,15,35][S.guard]});
+ for(const b of (S.domain?S.domain.buildings:[]))L.push({k:"维护·"+BUILDINGS[b].name,v:-(BUILDINGS[b].maint||0)});
+ /* 折扣修正在最后统一体现 */
+ if(S.comps.includes("barn")||S.cls==="smith"&&S.line==="gold"){
+  const cut=S.comps.includes("barn")?0.9:0.8;
+  let saved=0;for(const it of L)if(it.v<0)saved+=Math.round(-it.v*(1-cut));
+  if(saved>0)L.push({k:"节省·"+(S.comps.includes("barn")?"老巴恩":"工匠运营"),v:saved})}
+ const net=L.reduce((s,it)=>s+it.v,0);
+ return{items:L,net}}
+function dailyIncome(){
+ const led=buildLedger();
+ let net=led.net;
+ if(!isFinite(net))net=0;
+ S.gold=Math.max(0,S.gold+net);
+ S._lastNet=net;S._ledger=led.items;
+ const ir=mainRate();
+ S.infl=Math.max(0,S.infl+ir);
+ S._lastInfl=ir;
+ if(S.comps.includes("moelle"))S.hp=Math.min(S.hpMax,S.hp+0.5)}
+function domainTick(){const d=S.domain;
+ let target=62-d.tax*100;
+ if(d.buildings.includes("temple")||d.buildings.includes("manor_h"))target+=10;
+ if(S.policies.edict==="tax_free")target+=15;
+ if(S.policies.edict==="trade_f")target-=10;
+ d.morale=clamp(d.morale+(target-d.morale)*0.05,0,100)}
+function monthly(){
+ if(S.org)S.org.members+=ri(0,3);
+ if(S.domain){const gr=Math.floor(S.domain.pop*(S.domain.morale-40)/1000);S.domain.pop+=gr;
+  if(gr)log(`📊 月度：人口${gr>0?"净增":"净减"}${Math.abs(gr)}。`)}
+ log("📖 月末盘点：金"+fmt(S.gold)+" / "+LINES[S.line].mainName+fmt(S.infl));
+ if(S.org&&S.line==="throne"){const acc=d20();
+  if(acc<10)applyResult({gold:-ri(5,25),log:"🩸 外包任务出了岔子，协会赔了几笔抚恤金。"});
+  else applyResult({gold:S.org.members*ri(1,3),main:2,log:"💰 任务板结算：外包小队带回了一周的会费与分成。"})}
+ if(S.org&&S.line==="gold")applyResult({gold:ri(30,80),main:2,log:"💰 契约板月结：货款到账。"});
+ monthlyEvent()}
+function checkDebt(){const net=S._lastNet||0;
+ if(S.gold<=0&&net<0){S.debtDays++;
+  if(S.debtDays===10)log("⚠ 欠饷第十日：营地和账房里都有人在议论。","bad");
+  if(S.debtDays>=30){S.debtDays=0;
+   if(S.army&&milPow()>0){for(const u in S.army)S.army[u]=Math.floor(S.army[u]*0.6);
+    applyResult({main:-50,log:"💀 拖欠军饷满月：哗变！近半士兵带着装备散去。"})}
+   else if(S.assets.length){const a=S.assets[S.assets.length-1];S.assets.pop();
+    applyResult({main:-20,log:"💀 抵债：债主们抬走了你的最后一间产业（"+ASSETS[a].name+"）。"})}
+   else if(S.comps.length){const c=S.comps.pop();applyResult({main:-10,log:"💀 "+COMP[c].name+" 留下一封信离开了。穷途末路的旅途无人愿意同行。"})}}}
+ else S.debtDays=0}
+
+/* ================= 兵力 ================= */
+function milPow(){if(!S.army)return 0;let p=0;
+ for(const u in S.army)p+=UNITS[u].pow*S.army[u];
+ if(S.assets.includes("armory"))p*=1.05;
+ if(S.flags.army_standing)p*=1.1;
+ if(S.policies.edict==="mobilize")p*=1.2;
+ const c=CLASSES[S.cls];if(S.line==="throne"&&c.throne&&c.throne.armyPow)p*=1+c.throne.armyPow;
+ if(S.comps.includes("ironguard"))p+=10;
+ if(S.domain&&S.domain.buildings.includes("barracks"))p+=15;
+ return Math.floor(p)}
+function milCap(){return 150+S.milcap+(S.assets.includes("castle")?150:0)}
+
+/* ================= 阶段与仪式 ================= */
+function reqMet(req){if(!req)return false;
+ if(req.infl&&S.infl<req.infl)return false;
+ if(req.gold&&S.gold<req.gold)return false;
+ if(req.mil&&milPow()<req.mil)return false;
+ if(req.occupy&&!S.occupied[req.occupy])return false;
+ return true}
+function checkStage(){
+ const next=S.stage+1;const req=STAGE_REQ[S.line][next];
+ if(!req||S.stage>=5){if(S.stageReady)S.stageReady=null;return}
+ if(reqMet(req)&&!S.stageReady){S.stageReady=next;
+  if(S.line==="throne"&&next===1){S.stage=1;S.stageReady=null;S.stats.big++;
+   log("⭐ 你的名字开始被人记住：你已是【小有名气】。行动槽+2，倍速x2解锁。","epic");
+   banner("⭐ 阶段提升：小有名气");return}
+  banner("⭐ 里程碑达成："+LINES[S.line].stages[next]+" —— 命运的仪式已备好（点击顶栏 ⭐）")}
+ if(!reqMet(req)&&S.stageReady)S.stageReady=null}
+function stageReqText(req){if(!req)return"";
+ const p=[];if(req.infl)p.push(LINES[S.line].mainName+"≥"+req.infl);
+ if(req.gold)p.push("金币≥"+req.gold);if(req.mil)p.push("军力≥"+req.mil);
+ if(req.occupy)p.push("占领银月城");return p.join(" · ")}
+function ritualCostOk(cost){for(const k in cost){const v=cost[k];
+ if(k==="infl"&&S.infl<v)return false;
+ if(k==="gold"&&S.gold<v)return false}
+ return true}
+function doRitual(stage,optIdx){
+ if(S.stageReady!==stage){log("⚠ 命运尚未敲响你的门——仪式还不能进行。","bad");return}
+ const cost=RITUAL_COST[S.line][stage]||{};
+ if(!ritualCostOk(cost)){log("💰 仪式所需资源不足。","bad");return}
+ for(const k in cost){if(k==="infl")S.infl-=cost[k];if(k==="gold")S.gold-=cost[k]}
+ const r=RITUALS[S.line][stage];
+ applyResult(r.opts[optIdx].fx);
+ S.stage=stage;S.stageReady=null;S.stats.big++;
+ if(S.line==="gold"&&stage===1&&!S.assets.includes("shop"))S.assets.push("shop");
+ if(stage===2)S.org={members:S.line==="gold"?6:12,support:60};
+ if(stage===3)S.domain={pop:S.line==="gold"?600:2000,morale:55,tax:0.12,buildings:[]};
+ if(stage===4){if(S.line==="throne"){if(!S.army)S.army={militia:0,regular:0,knight:0,mage:0}}
+  else{S.monopolized={iron:false,herb:false,crystal:false};
+   const ms=monopState();
+   for(const k in ms)if(ms[k].length>=2)S.monopolized[k]=true}}
+ if(S.line==="gold"&&stage===5)S.monopolized=S.monopolized||{iron:false,herb:false,crystal:false};
+ log("⭐⭐ 阶段提升！你已是【"+LINES[S.line].stages[stage]+"】","epic");
+ banner("⭐ 阶段提升："+LINES[S.line].stages[stage]);
+ closeModal();save();renderAll()}
+
+/* ================= 战役 / 商战 ================= */
+function contestTargets(){return Object.keys(NODES).filter(id=>{
+ const n=NODES[id];if(!n.contest||S.occupied[id])return false;
+ if(S.stage<n.contest.stage)return false;
+ if(id==="silver"&&S.stage<4)return false;
+ return nodeUnlocked(id)})}
+function supportPct(target){let s=35+Math.min(30,S.line==="throne"?S.infl/50:S.gold/1000);
+ if(S.org)s+=S.org.members*0.6;
+ if(S.domain)s+=S.domain.morale*0.2;
+ if(S.flags.prince_crown)s+=15;
+ const cont={goblin:3,north:12,south:12,silver:25}[target]||10;
+ return clamp(Math.round(s-cont),0,100)}
+function launchContest(target,mult,invest){
+ const n=NODES[target];
+ if(S.line==="gold"){
+  invest=Math.min(invest,S.gold);
+  if(invest<500){log("⚠ 至少需要500金币的本金。","bad");return}
+  S.gold-=invest}
+ let my;
+ if(S.line==="throne")my=Math.round((milPow()+(S.org?S.org.members*(S.stage<4?2:0.3):0))*mult);
+ else my=Math.round(invest/50*mult);
+ if(my<5){log("⚠ 你的力量还撑不起这一战。","bad");return}
+ const leader=(S.comps.includes("ironguard")&&S.line==="throne")?3:0;
+ S.contest={target,enemy:n.contest.pow,my,myStart:my,days:Math.ceil(n.contest.pow/12)+ri(2,4),
+  invest:invest||0,leader,line:S.line};
+ log(S.line==="throne"?"⚔ 战役开始：向"+n.name+"进发！":"💼 商战开始：目标"+n.name+"的市场！", "epic");
+ closeModal();save()}
+function contestDay(){const c=S.contest;
+ let dc=8+c.enemy/25;
+ if(c.target==="silver"&&S.flags.silver_chaos)dc-=2;
+ let bonus=c.my/20+c.leader;
+ if(S.flags.found_force)bonus+=1;
+ if(S.flags.consort_family)bonus+=1;
+ const out=rollCheck(null,Math.round(dc),bonus);
+ if(out==="crit"){c.enemy=Math.max(0,Math.floor(c.enemy*0.55));log("⚔ 这一仗/这一手打得漂亮！")}
+ else if(out==="success"){c.enemy=Math.max(0,Math.floor(c.enemy*0.75))}
+ else if(out==="fail"){c.my=Math.floor(c.my*0.9)}
+ else{c.my=Math.floor(c.my*0.82);c.enemy=Math.floor(c.enemy*0.95)}
+ c.days--;
+ if(c.enemy<=0)contestEnd(true);
+ else if(c.my<=0||c.days<=0)contestEnd(false)}
+function contestEnd(win){const c=S.contest;const n=NODES[c.target];
+ if(win){S.occupied[c.target]=true;
+  if(S.line==="throne"){applyResult({main:40+n.contest.pow/2,log:"🏰 占领"+n.name+"！节点染上金色，贡赋入账。"})}
+  else{const back=Math.round(c.invest*0.8);applyResult({gold:back,main:20,log:"🏦 收购完成："+n.name+"的商业命脉归你所有（回笼"+back+"金币）。"})}}
+ else{log("⁉️ "+(S.line==="throne"?"战役":"商战")+"受挫，"+n.name+"暂不可得。","bad");
+  if(S.line==="throne"&&S.army&&c.my<c.myStart){const f=c.my/Math.max(1,c.myStart);
+   for(const u in S.army)S.army[u]=Math.floor(S.army[u]*f);
+   applyResult({main:-30,log:"残部归营。损失被记在了你的名下。"})}
+  else if(S.line==="gold"){const back=Math.round(c.invest*Math.max(0,c.my)/c.myStart*0.8);
+   applyResult({gold:back,main:-15,log:"撤资离场。抢回本金"+back+"金币，声誉小损。"})}}
+ S.contest=null;save()}
+
+/* ================= 垄断(黄金线) ================= */
+function monopState(){const st={iron:[],herb:[],crystal:[]};
+ for(const c in st)for(const n in S.monop)if(S.monop[n]===c)st[c].push(n);
+ return st}
+function buyOrigin(node){for(const c in COMMODITIES){const price=COMMODITIES[c].origins[node];
+ if(price==null||S.monop[node])continue;
+ if(S.gold<price){log("💰 金币不足。","bad");return}
+ S.gold-=price;S.monop[node]=c;
+ const ms=monopState()[c];
+ log("📦 收入一条"+COMMODITIES[c].name+"供应链（"+ms.length+"/2）","good");
+ if(ms.length>=2){if(S.monopolized)S.monopolized[c]=true;
+  log("🏦 垄断达成："+COMMODITIES[c].name+"！定价权在你手里。","epic");banner("🏦 垄断："+COMMODITIES[c].name)}
+ save();renderAll();return}}
+
+/* ================= 国债 ================= */
+function buyBonds(){const price=Math.round(S.flags.prince_debt?16000:20000);
+ if(S.gold<price){log("💰 金币不足。","bad");return}
+ S.gold-=price;S.bonds+=20000;applyResult({main:10,order:3,log:"📜 又一批盖着御玺的债券入库。国王的债，是最好的债。"});
+ if(S.bonds>=100000)checkEndings();save();renderAll()}
+
+/* ================= 结局 ================= */
+const ENDINGS={
+ fallen:{n:"传奇陨落",t:"你的故事在某个夜里戛然而止。但酒馆里会有人记得你的名字——这已经是大多数人求不来的结局。"},
+ wise:{n:"贤明之王",t:"教堂的钟声为你而鸣。史官写道：他来自橡木村，善待每一个记得他出身的人。"},
+ tyrant:{n:"铁血霸主",t:"你的王座下压着半个王国的铁与血。没有人再敢提起你出发的那个村庄。但没有人忘记。"},
+ slayer:{n:"屠龙者",t:"龙脊山的云开了一线。从今往后，所有关于勇气的谎言，都要先过你这一关。"},
+ obscure_t:{n:"史书无名",t:"你活了很久，也活得体面。只是史官的字里行间，找不到你的名字。"},
+ obscure_g:{n:"碌碌一生",t:"账本合上的那天，数字都平了。没有人会为一本平账立传。"},
+ uncrowned:{n:"无冕富王",t:"国王的库房要看你的脸色，尽管你从没有为自己加冕。黄金的王座，原本就不需要王冠。"},
+ monopolist:{n:"垄断者",t:"粮食、药草、魔晶——价格表上每一行都由你落笔。这比王冠更沉，也更好用。"},
+ creditor:{n:"债主之王",t:"国王在你面前也要脱帽。因为你持有他的国库，和他打过的每一场仗。"},
+ bankrupt:{n:"破产者",t:"拍卖槌落下三次。你看着自己的一生被打包带走，竟有一种轻装上阵的错觉。"}};
+function checkEndings(){if(S.ended)return;
+ if(S.hp<=0){end("fallen");return}
+ if(S.line==="throne"){
+  if(S.flags.dragon_slayer){end("slayer");return}
+  if(S.stage>=5){
+   if(S.good>=30&&S.domain&&S.domain.morale>=70&&S.infl>=6000){end("wise");return}
+   if(S.good<=-30&&milPow()>=400){end("tyrant");return}}}
+ else{
+  if(S.gold>=500000){end("uncrowned");return}
+  const monoCount=S.monopolized?["iron","herb","crystal"].filter(k=>S.monopolized[k]).length:0;
+  if(monoCount>=2){end("monopolist");return}
+  if(S.bonds>=100000){end("creditor");return}}
+ if(S.day>=365&&S.stage<3)end(S.line==="throne"?"obscure_t":"obscure_g")}
+function end(id){S.ended=id;S.paused=true;
+ log("🏁 "+ENDINGS[id].n,"epic");renderEnding();save()}
+
+/* ================= 新手引导 ================= */
+const TUT=[
+ {t:"点击底栏<b>发光的事件卡</b>，做出你的第一个抉择"},
+ {t:"点击地图上发光的<b>橡木村</b>，发起一项行动"},
+ {t:"等几日自动结算 → 攒够 <b>100 GP</b> 去左栏买<b>兼职铺位</b>，让钱生钱"}
+];
+function tutCheck(){
+ if(!S||S.tut>=99||S.ended)return;
+ if(S.tut===0&&Object.keys(S.evDone).length>0)S.tut=1;
+ else if(S.tut===1&&S.actions.length>0)S.tut=2;
+ else if(S.tut===2&&S.flags.first_resolved){S.tut=99;
+  modal(`<h2>🎓 出师了！</h2>
+    <div class="bigsteps">
+    <div class="st"><span class="ic">📜</span><span><b>事件卡</b> = 抉择<br><span class="d">地图 = 行动 · 左栏 = 经营</span></span></div>
+    <div class="st"><span class="ic">⭐</span><span><b>下一目标：${LINES[S.line].stages[1]}</b><br><span class="d">${stageReqText(STAGE_REQ[S.line][1])}</span></span></div>
+    </div>
+    <button class="goldbtn" onclick="closeModal()">开始生涯</button>`)}}
+function skipTut(){if(S){S.tut=99;closeModal();renderAll()}}
+function renderTut(){const bar=$("tutbar");
+ if(!S||S.tut>=99||S.ended||CREATING){bar.style.display="none";return}
+ const step=TUT[S.tut];if(!step){bar.style.display="none";return}
+ bar.style.display="flex";
+ bar.innerHTML=`<span>📍 新手指引 ${S.tut+1}/${TUT.length}：${step.t}</span>
+  <button onclick="skipTut()">跳过指引</button>`}
+
+/* ================= UI 渲染 ================= */
+function renderAll(){if(!S||CREATING)return;tutCheck();renderTut();renderTop();renderLeft();renderMap();renderBottom();renderLog()}
+let _bnT=null;
+function banner(t){const b=$("banner");b.textContent=t;b.classList.add("on");
+ if(_bnT)clearTimeout(_bnT);_bnT=setTimeout(()=>b.classList.remove("on"),4500)}
+let _modalClosed=true;
+function modal(html){
+ $("modalbox").innerHTML=html;$("modal").classList.remove("off");
+ if(_modalClosed){_modalClosed=false;if(S&&!S.ended){S._autoPause=S.paused;S.paused=true}}
+ if(S)renderTop()}
+function closeModal(){
+ $("modal").classList.add("off");_modalClosed=true;
+ if(S&&S._autoPause!=null){S.paused=S._autoPause;S._autoPause=null}
+ if(S)renderTop()}
+function renderTop(){
+ const L=LINES[S.line];
+ let sp="";
+ const maxSp=S.stage>=2?4:S.stage>=1?2:1;
+ for(const v of [1,2,4]){const dis=v>maxSp?"disabled":"";
+  sp+=`<button ${dis} onclick="setSpeed(${v})" style="${S.speed===v&&!S.paused?"border-color:#c9a24b;color:#f5d98c":""}">x${v}</button>`}
+ const net=S._lastNet||0,ir=S._lastInfl||0;
+ $("top").innerHTML=
+ `<button onclick="togglePause()" class="${S.paused?"goldbtn":""}">${S.paused?"▶":"⏸"}</button>${sp}
+  <span class="chip">${monthStr()}</span>
+  <div class="dayprog" id="daytrack" title="当日进度（1日=3秒×速度）"><i id="dayprog"></i><span class="dplabel" id="dplabel"></span></div>
+  <span class="chip mainRes">${L.icon} ${L.mainName} <b>${fmt(S.infl)}</b> <span class="rate">(${sgn(ir)}/日)</span></span>
+  <span class="chip" style="cursor:help" title="点击查看每日账本" onclick="openLedger()">💰 <b>${fmt(S.gold)}</b> GP <span class="rate ${net<0?"neg":""}">(${sgn(net)}/日) 📒</span></span>
+  <span class="chip">⚔️ 军力 ${S.army?fmt(milPow())+"/"+milCap():"—"}</span>
+  <span class="chip">${CLASSES[S.cls].icon}${RACES[S.race].icon} ${S.name} · ${L.stages[S.stage]}</span>
+  ${S.stageReady?`<button class="goldbtn" onclick="openRitual()">⭐ 命运仪式:${L.stages[S.stageReady]}</button>`:""}
+  <span class="spacer"></span>
+  <button onclick="openHelp()">? 说明</button>`}
+function setSpeed(v){S.speed=v;S.paused=false;renderTop()}
+function togglePause(){S._autoPause=null;S.paused=!S.paused;renderTop()}
+function bar(v,max,cls){return`<div class="bar ${cls||""}"><i style="width:${clamp(v/max*100,0,100)}%"></i></div>`}
+function renderLeft(){
+ const L=LINES[S.line];let h="";
+ h+=`<div class="card"><h3>${CLASSES[S.cls].icon} ${S.name}</h3>
+  <div class="small">${RACES[S.race].icon}${RACES[S.race].name} · ${CLASSES[S.cls].icon}${CLASSES[S.cls].name} · ${alignName(S.order,S.good)}</div>
+  HP ${Math.ceil(S.hp)}/${S.hpMax}${bar(S.hp,S.hpMax,"hp")}
+  <div class="small">${S.stage>=5?"你已站在此线的顶端。":(S.stageReady?"⭐ 命运仪式就绪":"下一阶梯："+LINES[S.line].stages[S.stage+1]+" · "+stageReqText(STAGE_REQ[S.line][S.stage+1]))}</div></div>`;
+ /* 阵营轴：新手期默认收起，降低视觉噪音 */
+ h+=`<details><summary>⚖ 阵营立场（随你的抉择漂移）</summary><div class="body">
+  秩序 ${sgn(S.order)}${bar(S.order+100,200)}
+  道德 ${sgn(S.good)}${bar(S.good+100,200,"good")}
+  <div class="small">行至极端会解锁特殊事件与路线（守序契约/混乱劫掠/善良民心/邪恶恐惧）。</div></div></details>`;
+ /* ---- 每日账本：钱从哪来，到哪去 ---- */
+ const led=buildLedger();
+ h+=`<div class="card" style="border-color:#8a6a2e"><h3>📒 每日账本</h3>
+  <div class="ledger-net" style="color:${led.net>=0?"#8fd18f":"#e08a7a"}">${sgn(led.net)} GP<span class="small" style="font-size:12px">/日</span></div>`;
+ if(!led.items.length){
+  h+=`<div class="small">暂无稳定收入 👉 先靠<b>行动与事件</b>赚钱</div>`}
+ else{
+  for(const it of led.items)
+   h+=`<div class="row"><span class="small">${it.k}</span><span class="small" style="color:${it.v>=0?"#8fd18f":"#e08a7a"}">${sgn(it.v)}</span></div>`}
+ h+=`<div class="row" style="border-top:1px dashed #4a3a22;margin-top:4px;padding-top:4px">
+  <span class="small">${L.icon} ${L.mainName} +${mainRate()}/日</span>
+  <span class="small">${S.org?"成员×"+S.org.members:"组织·阶段2"}</span></div></div>`;
+  if(S.comps.length){h+=`<details><summary>🎭 同伴 (${S.comps.length})</summary><div class="body">`;
+   for(const c of S.comps)h+=`<div class="row"><span>${COMP[c].name}</span><span class="small">${COMP[c].wage}GP/日</span></div><div class="small">${COMP[c].d}</div>`;
+   h+=`</div></details>`}
+  else h+=`<div class="small" style="padding:2px 6px">🎭 可去灰石镇招募同伴</div>`;
+  h+=`<details><summary>⚔ 装备</summary><div class="body">`;
+  if(!S.gear.length)h+=`<div class="small">空空如也。</div>`;
+  for(const g of S.gear){const it=GEAR[g];if(it)h+=`<div class="row"><span>${it.icon}${it.name}</span></div>`}
+  h+=`<div class="small">👑 装备与产业在城镇节点购买。</div></div></details>`;
+ h+=`<details><summary>🏬 产业 (${S.assets.length})</summary><div class="body">`;
+ for(const a of S.assets)h+=`<div class="row"><span>${ASSETS[a].icon}${ASSETS[a].name}</span><span class="small">${ASSETS[a].income?"+"+ASSETS[a].income+"GP/日":"—"}</span></div>`;
+ h+=`<hr><div class="small">可购产业：</div>`;
+ for(const a of ASSET_SHOP){const d=ASSETS[a];
+  if(d.line&&d.line!=="both"&&d.line!==S.line)continue;
+  if(d.line==="both"&&S.line==="gold"&&a==="armory")continue;
+  if(d.stage&&S.stage<d.stage)continue;
+  if(S.assets.includes(a))continue;
+  if(d.req&&!S.comps.includes(d.req))continue;
+  h+=`<div class="row"><span>${d.icon}${d.name} <span class="small">${d.desc}</span></span>
+   <button ${S.gold<d.price?"disabled":""} onclick="buyAsset('${a}')">${fmt(d.price)}GP</button></div>`}
+ h+=`</div></details>`;
+ if(S.org){h+=`<details><summary>${S.line==="gold"?"🎭 行会":"🛡 协会"} (${S.org.members}人 · 支持率${S.org.support}%)</summary><div class="body">`;
+  h+=`<div class="small">${S.line==="gold"?"契约板每月结算，为你带来被动收益。":"会员为你带来影响力与会费。可在事件中增长。"}</div>`;
+  if(S.line==="throne"&&S.stage>=2){
+   h+=`<div class="small">周会方针：</div>`;
+   for(const [k,n,d] of [["war","军备","战役掷骰+1"],["commerce","商业","产业收益+10%"],["intel","情报","学识潜行+1"],["charity","亲民","影响力日入+20%"]])
+    h+=`<div class="row"><span>${n} <span class="small">${d}</span></span><button class="${S.policies.guild===k?"goldbtn":""}" onclick="setPolicy('guild','${k}')">推行</button></div>`}
+  h+=`</div></details>`}
+ if(S.domain){const d=S.domain;
+  h+=`<details><summary>${S.line==="gold"?"🌾 庄园":"🏰 领地"} (人口${fmt(d.pop)})</summary><div class="body">`;
+  h+=`口碑/民心 ${Math.round(d.morale)}${bar(d.morale,100,"good")}
+   <div class="row"><span>${S.line==="gold"?"地租":"税率"} <b id="taxLbl">${Math.round(d.tax*100)}%</b></span>
+   <input type="range" min="0" max="${S.line==="gold"?40:30}" value="${Math.round(d.tax*100)}" oninput="document.getElementById('taxLbl').textContent=this.value+'%'" onchange="setTax(this.value)"></div>
+   <div class="small">高压→短期多金，长期人口流失。</div><hr>`;
+  for(const b in BUILDINGS){const bd=BUILDINGS[b];
+   if(bd.line!==S.line)continue;
+   if(d.buildings.includes(b))h+=`<div class="row"><span>${bd.icon}${bd.name}</span><span class="small">已建</span></div>`;
+   else h+=`<div class="row"><span>${bd.icon}${bd.name} <span class="small">${bd.fx}</span></span><button ${S.gold<bd.price?"disabled":""} onclick="buyBuilding('${b}')">${bd.price}GP</button></div>`}
+  h+=`</div></details>`}
+ if(S.line==="gold"&&S.stage>=1){
+  h+=`<details><summary>🛡 护卫等级 (${S.guard}/3)</summary><div class="body">`;
+  for(let i=0;i<4;i++)h+=`<div class="row"><span>等级${i} <span class="small">${[0,5,15,35][i]}GP/日 · 劫掠DC+${i}</span></span><button ${S.gold<0?"disabled":""} class="${S.guard===i?"goldbtn":""}" onclick="setGuard(${i})">雇用</button></div>`;
+  h+=`</div></details>`}
+ if(S.line==="throne"&&S.stage>=3){h+=`<details><summary>⚔ 领地卫队/军团 (军力${fmt(milPow())}/${milCap()})</summary><div class="body">`;
+  if(!S.army)h+=`<div class="small">阶段4前只能以「领地卫队」名义募兵；建立兵团后方可发动战役。</div>`;
+  for(const u in UNITS){const un=UNITS[u];
+   if(un.req&&!S.domain.buildings.includes(un.req))continue;
+   h+=`<div class="row"><span>${un.icon}${un.name} ×${(S.army||{})[u]||0} <span class="small">${un.pow}军力/${un.maint}GP日</span></span>
+    <button ${S.gold<un.price||milPow()+un.pow>milCap()?"disabled":""} onclick="buyUnit('${u}')">+1(${un.price}GP)</button></div>`}
+  h+=`</div></details>`}
+ if(S.line==="gold"&&S.stage>=4){const ms=monopState();
+  h+=`<details><summary>🏦 垄断棋局</summary><div class="body">`;
+  for(const c in COMMODITIES){const owned=ms[c];
+   h+=`<div class="row"><span>${COMMODITIES[c].name} <span class="small">${owned.length>=2?"✔已垄断":"供应链"+owned.length+"/2"}</span></span>
+    <span class="small">${owned.map(n=>NODES[n].name).join("、")||"—"}</span></div>`}
+  h+=`<div class="small">产地在对应节点收购（老矿坑/北境=铁矿，森林/圣白山=药草，学院/港口=魔晶）。</div></div></details>`}
+ if(S.line==="gold"&&(S.bonds>0||S.stage>=5)){
+  h+=`<details><summary>📜 国债 (${fmt(S.bonds)} GP)</summary><div class="body">
+   <div class="small">${S.stage>=5?"持有国债达到 100,000，国王也要看你脸色。":"国王的债务，是最好的抵押品。"}</div>
+   ${S.stage>=5?`<button ${S.gold<(S.flags.prince_debt?16000:20000)?"disabled":""} onclick="buyBonds()">认购国债(${fmt(S.flags.prince_debt?16000:20000)}GP)</button>`:""}
+   </div></details>`}
+ if(S.stage>=5){
+  h+=`<details><summary>📜 ${S.line==="throne"?"王国政令":"经济国策"}</summary><div class="body">`;
+  const POL=S.line==="throne"
+   ?[["tax_free","免税恩典","税收-50%·民心+15"],["mobilize","军事动员","军力+20%·军饷+50%"],["trade_f","贸易特许","产业+20%·民心-10"]]
+   :[["tariff","关税同盟","契约贡赋大增"],["franchise","排他特许","垄断品产业+25%"],["privateer","私掠许可","+40GP/日·声名狼藉"]];
+  for(const [k,n,d] of POL)h+=`<div class="row"><span>${n} <span class="small">${d}</span></span><button class="${S.policies[S.line==="throne"?"edict":"state"]===k?"goldbtn":""}" onclick="setPolicy('${S.line==="throne"?"edict":"state"}','${k}')">颁布</button></div>`;
+  h+=`</div></details>`}
+ if(S.contest){const c=S.contest,n=NODES[c.target];
+  h+=`<div class="card" style="border-color:#a04a3a"><h3>${S.line==="throne"?"⚔ 战役":"💼 商战"} · ${n.name}</h3>
+   <div class="row"><span>我方 ${fmt(c.my)}</span><span>敌方 ${S.cls==="ranger"||S.flags.north_intel?fmt(c.enemy):Math.round(c.enemy*0.8)+"~"+Math.round(c.enemy*1.2)}</span></div>
+   ${bar(c.my,Math.max(c.my,c.myStart))}
+   <div class="small">剩余约 ${c.days} 日</div>
+   <button class="danger" onclick="retreatContest()">撤退止损</button></div>`}
+ h+=`<div class="small" style="text-align:center">掷骰 ${S.stats.rolls} 次 · 大成功 ${S.stats.crits} · 大失败 ${S.stats.fails}</div>`;
+ $("left").innerHTML=h}
+function retreatContest(){if(!S.contest)return;const c=S.contest;
+ if(S.line==="throne"&&S.army){const f=c.my/Math.max(1,c.myStart);for(const u in S.army)S.army[u]=Math.floor(S.army[u]*f)}
+ else if(S.line==="gold")applyResult({gold:Math.round(c.invest*c.my/Math.max(1,c.myStart)*0.8),main:-10});
+ log("🏳 你下令撤出"+NODES[c.target].name+"。留得青山在。");
+ S.contest=null;save();renderAll()}
+function gearPrice(p){let k=1;
+ if(S.race==="dwarf")k*=0.8;if(S.comps.includes("amber"))k*=0.85;
+ return Math.max(1,Math.round(p*k))}
+function setPolicy(cat,k){S.policies[cat]=k;log("📜 颁布政策。");save();renderAll()}
+function setTax(v){if(!S.domain)return;S.domain.tax=v/100;save()}
+function setGuard(n){S.guard=n;log("🛡 护卫等级调整为"+n+"。");save();renderAll()}
+function buyAsset(a){const d=ASSETS[a];const price=d.price;
+ if(S.gold<price){log("💰 金币不足。","bad");return}
+ S.gold-=price;S.assets.push(a);
+ if(d.onBuy)applyResult(d.onBuy);
+ log("🏬 购入产业："+d.name,"good");save();renderAll()}
+function buyBuilding(b){const d=BUILDINGS[b];if(S.gold<d.price||!S.domain)return;
+ S.gold-=d.price;S.domain.buildings.push(b);
+ log("🏗 建成："+d.name+"（"+d.fx+"）","good");save();renderAll()}
+function buyUnit(u){const un=UNITS[u];if(!S.army)S.army={militia:0,regular:0,knight:0,mage:0};
+ if(S.gold<un.price||milPow()+un.pow>milCap()){log("⚠ 金币不足或超过军力上限。","bad");return}
+ S.gold-=un.price;S.army[u]=(S.army[u]||0)+1;
+ log("⚔ 征募："+un.name+"。","good");save();renderAll()}
+
+/* ---------- 地图 ---------- */
+function renderMap(){
+ let h="";
+ for(const [a,b] of EDGES){if(nodeUnlocked(a)&&nodeUnlocked(b))
+  h+=`<line class="edge" x1="${NODES[a].x}" y1="${NODES[a].y}" x2="${NODES[b].x}" y2="${NODES[b].y}"/>`}
+ for(const id in NODES){const n=NODES[id];
+  const un=nodeUnlocked(id);
+  const act=S.actions.some(a=>a.node===id);
+  const atWar=S.contest&&S.contest.target===id;
+  if(!un){h+=`<g class="node locked" onclick="nodeGlobe('${id}')"><circle cx="${n.x}" cy="${n.y}" r="16"/><text x="${n.x}" y="${n.y+6}" class="ico">?</text><text x="${n.x}" y="${n.y+38}">？？？</text></g>`;continue}
+  const hi=(S.tut===1&&(id==="oak"||id==="gray"))?" tut-hi":"";
+  h+=`<g class="node ${S.occupied[id]?"mine":""} ${act?"act":""}${hi}" onclick="nodeGlobe('${id}')">
+   <circle cx="${n.x}" cy="${n.y}" r="22" ${S.occupied[id]?'class="occupied"':""}/>
+   <text x="${n.x}" y="${n.y+6}" class="ico">${n.icon}</text>
+   <text x="${n.x}" y="${n.y+38}">${n.name}${S.occupied[id]?" 🏴":""}</text>
+   ${act?`<text x="${n.x+20}" y="${n.y-18}" style="fill:#f0c96a">↻</text>`:""}
+   ${atWar?`<text x="${n.x-26}" y="${n.y-18}" style="fill:#e07a5a">⚔</text>`:""}
+   </g>`}
+ $("map").innerHTML=h}
+
+/* ---------- 底栏与日志 ---------- */
+function renderBottom(){
+ let h="";
+ h+=`<div class="bsec"><div class="bsec-t">📜 待决事件</div><div class="bsec-cards">`;
+ for(const p of S.pending){const ev=EVENTS.find(e=>e.id===p.id);
+  h+=`<div class="evcard${S.tut===0?" tut-hi":""}" onclick="openEvent('${p.id}')"><div class="t">${ev.name}</div><span class="dl">⏳ ${p.dl}日</span><div class="cta">处理 ▶</div></div>`}
+ if(!S.pending.length)h+=`<span class="hint">暂无待决事件</span>`;
+ h+=`</div></div>`;
+ h+=`<div class="bsec"><div class="bsec-t">⚙ 行动（自动结算）</div><div class="bsec-cards">`;
+ if(S.actions.length){
+  for(const a of S.actions)h+=`<span class="actchip">${ACTIONS[a.key].name} · ${a.left}日</span>`;
+  h+=`<span class="hint">（槽 ${S.actions.length}/${actionSlots()}）</span>`}
+ else h+=`<span class="hint">空闲（${actionSlots()} 槽）· 点地图节点发起</span>`;
+ h+=`</div></div>`;
+ $("bottom").innerHTML=h}
+function renderLog(){let h="";
+ for(const e of S.log.slice(0,80))h+=`<div class="entry ${e.cls}"><span class="d">D${e.d}</span>${esc(e.t)}</div>`;
+ $("logbox").innerHTML=h||"<div class='small'>（你的传奇尚未开始。）</div>"}
+
+/* ================= 弹窗：事件 ================= */
+function resSummary(res){if(!res)return"";const p=[];
+ if(res.gold)p.push((res.gold>0?"+":"")+res.gold+"GP");
+ if(res.main)p.push("+"+res.main+LINES[S.line].mainName);
+ if(res.flag||res.unlock)p.push("★");
+ return p.join(" ")}
+/* 选项彩色标签：消耗红 / 判定橙 / 收益绿 / 风险深红 */
+function optMeta(o){
+ const m=[];
+ if(o.cost)m.push(`<span class="tag-bad">-${o.cost}GP</span>`);
+ if(o.dc!=null)m.push(`<span class="tag-dc">🎲DC${o.dc}${o.skill?"·"+SK_LBL[o.skill]+sgn(skillBonus(o.skill)):""}</span>`);
+ const src=o.res?o.res.success:o.base;
+ const g=resSummary(src);
+ if(g)m.push(`<span class="tag-ok">✓ ${g}</span>`);
+ const crit=o.res&&o.res.crit?resSummary(o.res.crit):"";
+ if(crit)m.push(`<span class="tag-ok">✦ ${crit}</span>`);
+ if(o.res&&o.res.critfail){
+  const cf=o.res.critfail;
+  if(cf.hp<=-6)m.push(`<span class="tag-bad">☠ 死亡风险</span>`);
+  else if(cf.hp<0)m.push(`<span class="tag-bad">⚠ 受伤</span>`)}
+ return m.join("")}
+function openEvent(id){const ev=EVENTS.find(e=>e.id===id);if(!ev)return;
+ let opts="";
+ ev.opts.forEach((o,i)=>{
+  opts+=`<button class="opt" onclick="chooseOpt('${id}',${i})">${esc(o.label)}
+   <span class="meta">${optMeta(o)}</span></button>`});
+ const dl=S.pending.find(p=>p.id===id);
+ modal(`<h2>📜 ${ev.name}</h2><div class="story">${ev.text}</div>${opts}
+  <hr><button onclick="closeModal()">稍后再说（剩${dl?dl.dl:0}日）</button>`)}
+function chooseOpt(id,i){const ev=EVENTS.find(e=>e.id===id);const o=ev.opts[i];
+ if(o.cost&&S.gold<o.cost){log("💰 金币不足，这个选项暂不可行。","bad");return}
+ if(o.cost)S.gold-=o.cost;
+ if(o.res){const out=rollCheck(o.skill,o.dc);applyResult(o.res[out]||{})}
+ else applyResult(o.base||{});
+ S.evDone[id]=true;S.pending=S.pending.filter(p=>p.id!==id);
+ closeModal();save();renderAll()}
+
+/* ================= 弹窗：节点 ================= */
+function nodeGlobe(id){const n=NODES[id];
+ if(!nodeUnlocked(id)){modal(`<h2>❓ 未知的迷雾</h2><div class="story">关于这里，你还没有任何可靠的传闻。</div><button onclick="closeModal()">离开</button>`);return}
+ let h=`<h2>${n.icon} ${n.name}</h2><div class="story">${n.desc}${S.occupied[id]?"<br>🏴 这里已在你的掌控之下。":""}</div>`;
+ if(S.contest&&S.contest.target===id)h+=`<div class="small">⚔ 战事进行中（每日一掷，见左栏）。</div>`;
+ const acts=Object.keys(ACTIONS).filter(k=>{const d=ACTIONS[k];
+  if(d.node!==id)return false;
+  if(d.line&&d.line!==S.line)return false;
+  if(d.stage&&S.stage<d.stage)return false;
+  if(k==="delve"&&!S.comps.length)return false;
+  if(k==="dragon_slay"&&!dragonReady())return false;
+  if(k==="dragon_deal"&&!dragonReady())return false;
+  return true});
+ if(acts.length){h+="<hr>";
+  for(const k of acts){const d=ACTIONS[k];
+   const full=S.actions.length>=actionSlots();
+   const dup=S.actions.some(a=>a.key===k);
+   const poor=d.cost&&S.gold<d.cost;
+   const m=[];
+   m.push(`<span class="tag-dc">⏱${d.days}日</span>`);
+   if(d.skill)m.push(`<span class="tag-dc">🎲DC${d.dc}·${SK_LBL[d.skill]}${sgn(skillBonus(d.skill))}</span>`);
+   else if(d.dc!=null)m.push(`<span class="tag-dc">🎲DC${d.dc}</span>`);
+   if(d.cost)m.push(`<span class="tag-bad">-${d.cost}GP</span>`);
+   const g=resSummary(d.res?d.res.success:null);
+   if(g)m.push(`<span class="tag-ok">✓ ${g}</span>`);
+   if(d.desc.includes("☠"))m.push(`<span class="tag-bad">☠ 死亡风险</span>`);
+   else if(d.desc.includes("⚠"))m.push(`<span class="tag-bad">⚠ 受伤可能</span>`);
+   h+=`<button class="opt" ${full||dup||poor?"disabled":""} onclick="startAction('${k}');closeModal()">${d.name}
+    <span class="meta">${m.join("")}</span></button>`}}
+ if(["oak","gray","silver","academy","port"].includes(id))
+  h+=`<button class="opt" onclick="openShop('${id}')">🛒 进入市场<span class="meta">装备、道具</span></button>`;
+ if(S.line==="gold"&&S.stage>=4&&(id in COMMODITIES.iron.origins||id in COMMODITIES.herb.origins||id in COMMODITIES.crystal.origins)){
+  for(const c in COMMODITIES){const price=COMMODITIES[c].origins[id];
+   if(price==null||S.monop[id])continue;
+   h+=`<button class="opt" ${S.gold<price?"disabled":""} onclick="buyOrigin('${id}')">📦 收购${COMMODITIES[c].name}供应链（${fmt(price)}GP）<span class="meta">供应链2/2即垄断该商品</span></button>`}}
+ if(S.line==="throne"&&S.stage>=4&&id==="north"){h+="<hr><div class='small'>就地征募：</div>";
+  for(const u in UNITS){const un=UNITS[u];
+   h+=`<button class="opt" ${S.gold<un.price||milPow()+un.pow>milCap()?"disabled":""} onclick="buyUnit('${u}')">${un.icon}征募${un.name}<span class="meta">${un.price}GP · ${un.pow}军力 · ${un.maint}GP/日</span></button>`}}
+ if(S.line==="gold"&&id==="silver"&&S.stage>=5)
+  h+=`<button class="opt" ${S.gold<(S.flags.prince_debt?16000:20000)?"disabled":""} onclick="buyBonds()">📜 认购国债<span class="meta">持有100,000GP国债可达成「债主之王」结局</span></button>`;
+ if(contestTargets().includes(id))
+  h+=`<button class="opt goldbtn" onclick="openVote('${id}')">${S.line==="throne"?"⚔ 发起讨伐战役":"💼 发起商战收购"}<span class="meta">多日对抗 · 每日掷骰 · 可随时撤退</span></button>`;
+ if(id==="black")
+  h+=`<button class="opt" ${S.gold<100?"disabled":""} onclick="blackDeal()">🏴‍☠️ 买赃货（-100GP）<span class="meta">随机装备或一场空</span></button>`;
+ h+="<hr><button onclick='closeModal()'>离开</button>";
+ modal(h)}
+function blackDeal(){S.gold-=100;
+ const pool=GEAR_SHOP.filter(g=>!S.gear.includes(g)&&GEAR[g].price<=300);
+ if(rng()<0.55&&pool.length){const g=choice(pool);applyResult({loot:g,log:"赃货开箱：入手"+GEAR[g].name+"。"})}
+ else applyResult({gold:30,log:"箱子里只有几件假货。你转手卖了个废铁价。"});
+ closeModal();renderAll()}
+let _shopNode="gray";
+function openShop(node){_shopNode=node;let h=`<h2>🛒 ${NODES[node].name} · 市场</h2>`;
+ h+=`<button class="opt" ${S.gold<50?"disabled":""} onclick="buyLuckyCoin()">🪙 幸运币（50GP）<span class="meta">下次大失败自动降格为失败（一次性）</span></button>`;
+ for(const g of GEAR_SHOP){if(S.gear.includes(g))continue;const it=GEAR[g];
+  const price=gearPrice(it.price);
+  const eff=it.bonus?`${SK_LBL[it.skill]}+${it.bonus}`:it.defense?`受伤-${it.defense}`:it.fast?"行动-10%":it.trade?"贸易类DC-1":it.safe?"被劫损失-50%":it.raid?"劫掠DC-1":"";
+  h+=`<div class="row"><span>${it.icon}${it.name} <span class="small">${eff}</span></span>
+   <button ${S.gold<price?"disabled":""} onclick="buyGear('${g}')">${price}GP</button></div>`}
+ h+="<hr><button onclick='closeModal()'>离开</button>";modal(h)}
+function buyGear(g){const price=gearPrice(GEAR[g].price);
+ if(S.gold<price){log("💰 金币不足。","bad");return}
+ S.gold-=price;S.gear.push(g);
+ log("🛍 购入："+GEAR[g].name,"good");save();
+ openShop(_shopNode);renderAll()}
+function buyLuckyCoin(){if(S.gold<50)return;S.gold-=50;S.flags.lucky_coin=true;
+ log("🪙 幸运币入手。下次大失败时自动生效。","good")}
+
+/* ================= 弹窗：仪式 ================= */
+function openRitual(){const st=S.stageReady;if(!st){modal("<h2>命运尚未敲响你的门</h2><button onclick='closeModal()'>离开</button>");return}
+ const req=STAGE_REQ[S.line][st],cost=RITUAL_COST[S.line][st]||{};
+ const r=RITUALS[S.line][st];
+ let costTxt=Object.entries(cost).map(([k,v])=>(k==="infl"?LINES[S.line].mainName:"金币")+"-"+v).join(" · ")||"无";
+ let opts=r.opts.map((o,i)=>`<button class="opt" onclick="doRitual(${st},${i})">${o.n}<span class="meta">${o.d}${ritualCostOk(cost)?"":" · ⚠资源不足"}</span></button>`).join("");
+ modal(`<h2>⭐ 命运仪式 · ${r.t}</h2><div class="story">${r.txt}</div>
+  <div class="small">条件：${stageReqText(req)}<br>仪式消耗：${costTxt}</div><hr>${opts}
+  <hr><button onclick="closeModal()">再等等</button>`)}
+
+/* ================= 弹窗：表决与开战 ================= */
+let _vote=null;
+function openVote(target){S._vote={target,b:0,p:0,inv:Math.min(3000,Math.max(1000,S.gold))};renderVote()}
+function renderVote(){const v=S._vote;const sup=supportPct(v.target)+v.b*10+v.p*10;
+ const n=NODES[v.target];const c=n.contest;
+ const enemyTxt=S.cls==="ranger"||S.flags.north_intel?c.pow:Math.round(c.pow*0.8)+"~"+Math.round(c.pow*1.2);
+ let h=`<h2>${S.line==="throne"?"⚔ 军议表决":"💼 董事会表决"}</h2>
+  <div class="story">${S.line==="throne"?"军中与协会的长者们围坐在地图前。这一仗，得他们点头。":"股东们捏着茶杯打量你。动用财团的力量，得先说服他们。"}</div>
+  <div class="row"><span>目标：${n.name}（敌方力量 约${enemyTxt}）</span></div>`;
+ if(S.line==="throne")h+=`<div class="row"><span>我方军力：<b>${fmt(milPow()+(S.org?Math.round(S.org.members*(S.stage<4?2:0.3)):0))}</b>（正规军${S.stage<4?"+协会会员":"占多数"}）</span></div>`;
+ else{h+=`<div class="row"><span>投入资本：</span><span><input type="range" id="invR" min="500" max="${Math.max(500,S.gold)}" step="100" value="${v.inv}" oninput="S._vote.inv=+this.value;document.getElementById('invV').textContent=this.value;document.getElementById('powV').textContent=Math.round(this.value/50)"> <b id="invV">${v.inv}</b>GP → 资本力量 <b id="powV">${Math.round(v.inv/50)}</b></span></div>`}
+ h+=`<hr><div class="row"><span>当前支持率：<b style="color:${sup>=60?"#8fd18f":sup>=40?"#f0c96a":"#e07a5a"}">${sup}%</b></span></div>${bar(sup,100)}
+  <div class="small">≥60% 全力出击 · 40~59% 勉强通过(力量-15%) · <40% 被否决(声望受损)</div>
+  <button class="opt" ${v.b>=2||S.gold<50?"disabled":""} onclick="voteBribe()">🪙 打点关键人物（-50GP → 支持率+10，限2次）</button>
+  <button class="opt" ${v.p>=1||S.infl<20?"disabled":""} onclick="votePress()">👑 施压（-20${LINES[S.line].mainName} → 支持率+10，限1次）</button>
+  <button class="opt goldbtn" onclick="voteLaunch(${sup})">正式提议${sup<40?"（预计被否决）":""}</button>
+  <hr><button onclick="closeModal()">作罢</button>`;
+ modal(h)}
+function voteBribe(){S.gold-=50;S._vote.b++;log("🪙 几只钱袋悄悄换了主人。");renderVote();renderAll()}
+function votePress(){S.infl=Math.max(0,S.infl-20);S._vote.p++;
+ log("👑 你动用了威望。有人低下了头，有人记下了这笔账。");renderVote();renderAll()}
+function voteLaunch(sup){
+ const v=S._vote;const target=v.target;
+ if(sup<40){if(S.line==="throne")applyResult({main:-30,log:"👎 军议否决了你的提案。老人们觉得你疯了。"});
+  else applyResult({gold:-500,main:-10,log:"👎 董事会拒绝了这次冒进。你赔了定金。"});
+  S._vote=null;closeModal();renderAll();return}
+ if(sup>=40&&sup<60)log("🤨 表决勉强通过。有人留了力。");
+ launchContest(target,sup<60?0.85:1,S.line==="gold"?v.inv:0);
+ S._vote=null}
+
+/* ================= 弹窗：结局/说明/离线 ================= */
+function renderEnding(){const e=ENDINGS[S.ended];
+ modal(`<h2>🏁 ${e.n}</h2><div class="story">${e.t}</div>
+  <div class="endstats">
+  <span class="chip">在世 ${S.day} 日</span><span class="chip">掷骰 ${S.stats.rolls} 次</span>
+  <span class="chip">大成功 ${S.stats.crits}</span><span class="chip">大失败 ${S.stats.fails}</span>
+  <span class="chip">阶段 ${LINES[S.line].stages[S.stage]}</span></div>
+  <div class="small" style="text-align:center;margin:10px 0">另一条人生，等你再来一局。</div>
+  <button class="goldbtn" onclick="restartGame()">🔄 开始新的人生</button>`)}
+function restartGame(){
+ wipeSave();
+ closeModal();
+ S=null;CREATING=true;
+ _cw.step=1;_cw.name="";$("create").classList.remove("off");renderCreate()}
+function openLedger(){const led=buildLedger();const L=LINES[S.line];
+ let rows="";
+ for(const it of led.items)
+  rows+=`<div class="row"><span>${it.k}</span><span style="color:${it.v>=0?"#8fd18f":"#e08a7a"}">${sgn(it.v)} GP</span></div>`;
+ if(!rows)rows=`<div class="small">暂无稳定收支。靠行动（点地图节点）与事件卡赚第一桶金，然后买产业。</div>`;
+ modal(`<h2>📒 每日账本</h2>
+  <div class="story">每个游戏日结束时自动结算。净收入：<b style="color:${led.net>=0?"#8fd18f":"#e08a7a"}">${sgn(led.net)} GP/日</b></div>
+  <hr>${rows}<hr>
+  <div class="row"><span>${L.icon} ${L.mainName}增速</span><span style="color:#8fd18f">+${mainRate()}/日</span></div>
+  <div class="small">${S.org?"组织成员 "+S.org.members+" 人（主要来源）":"组建组织（阶段2）后成员每日带来"+L.mainName}</div>
+  <hr><button onclick="closeModal()">关闭</button>`)}
+function openHelp(){modal(`<h2>❓ 玩法说明</h2>
+ <div class="bigsteps">
+ <div class="st"><span class="ic">🗺</span><span><b>地图节点</b> → 行动 / 市场 / 战役<br><span class="d">行动耗时数日，自动掷骰结算</span></span></div>
+ <div class="st"><span class="ic">📜</span><span><b>事件卡</b> → 抉择（7日内处理）<br><span class="d">逾期自动保守处理</span></span></div>
+ <div class="st"><span class="ic">📒</span><span><b>左栏账本</b> → 买产业、调政策<br><span class="d">产业自动入账 = 放置收入</span></span></div>
+ <div class="st"><span class="ic">⭐</span><span><b>阶段达标</b> → 顶栏命运仪式<br><span class="d">仪式 = 阶段晋升，解锁新玩法</span></span></div>
+ </div>
+ <div class="small">🎲 d20+修正 vs DC：骰20/超DC+5=大成功，骰1=大失败 · ⏸暂停/x1 x2 x4调速 · 自动存档</div>
+ <hr><button onclick="exportSave()">📤 导出</button>
+ <button onclick="importSave()">📥 导入</button>
+ <button class="danger" onclick="if(confirm('确定删档重来？'))restartGame()">🗑 删档重开</button>
+ <hr><button onclick="closeModal()">关闭</button>`)}
+function exportSave(){modal(`<h2>📤 存档文本</h2><textarea style="width:100%;height:200px;background:#1a1512;color:#e8dcc0;border:1px solid #5a4426">${JSON.stringify(S)}</textarea><button onclick="openHelp()">返回</button>`)}
+function importSave(){modal(`<h2>📥 粘贴存档</h2><textarea id="impT" style="width:100%;height:200px;background:#1a1512;color:#e8dcc0;border:1px solid #5a4426"></textarea>
+ <button onclick="doImport()">导入并重载</button><button onclick="openHelp()">返回</button>`)}
+function doImport(){try{const s=JSON.parse($("impT").value);if(!s.line)throw 0;
+ localStorage.setItem(SAVE_KEY,JSON.stringify(s));
+ S=null;location.reload()}catch(e){alert("存档文本无法解析")}}
+function offlineReport(days){const net=Math.max(0,(assetIncome()+contractIncome()+rentIncome()+tributeIncome()-wages()));
+ const ir=mainRate();
+ modal(`<h2>🌙 你离开了 ${days} 日</h2><div class="story">世界照常运转。你的产业、契约与人心替你赚了：</div>
+  <div class="endstats"><span class="chip">💰 +${fmt(net*0.5*days)} GP（半速）</span>
+  <span class="chip">${LINES[S.line].icon} +${fmt(ir*0.5*days)} ${LINES[S.line].mainName}</span></div>
+  <div class="small">（离线收益上限7日，效率50%）</div><hr><button onclick="closeModal()">回到现实</button>`)}
+
+/* ================= 开局向导 ================= */
+const _cw={step:1,race:"human",cls:"mercenary",align:"ln",line:"throne",name:""};
+function renderCreate(){
+ let h=`<div class="wiz"><h1>王座与黄金</h1><div class="sub">DnD 放置经营 DEMO · 一局一线 · v0.4</div>`;
+ if(_cw.step===1){h+=`<h2>① 选择种族</h2><div class="pick">`;
+  for(const k in RACES){const r=RACES[k];
+   h+=`<div class="p ${_cw.race===k?"sel":""}" onclick="_cw.race='${k}';renderCreate()">${r.icon}<b>${r.name}</b><div class="d">${r.desc}</div></div>`}
+  h+=`</div><div class="wizbtns"><span></span><button class="goldbtn" onclick="_cw.step=2;renderCreate()">下一步 →</button></div>`}
+ if(_cw.step===2){h+=`<h2>② 选择职业</h2><div class="pick">`;
+  for(const k in CLASSES){const c=CLASSES[k];
+   const rec=c.line==="both"?"双线皆宜":(c.line==="throne"?"王座":"黄金")+"线推荐";
+   h+=`<div class="p ${_cw.cls===k?"sel":""}" onclick="_cw.cls='${k}';renderCreate()">${c.icon}<b>${c.name}</b> <span class="small">${rec}</span><div class="d">${c.desc}</div></div>`}
+  h+=`</div><div class="wizbtns"><button onclick="_cw.step=1;renderCreate()">← 上一步</button><button class="goldbtn" onclick="_cw.step=3;renderCreate()">下一步 →</button></div>`}
+ if(_cw.step===3){h+=`<h2>③ 选择阵营（会随决策漂移）</h2><div class="pick">`;
+  for(const k in ALIGN){const a=ALIGN[k];
+   h+=`<div class="p ${_cw.align===k?"sel":""}" onclick="_cw.align='${k}';renderCreate()"><b>${a.name}</b><div class="d">${a.desc}</div></div>`}
+  h+=`</div><div class="wizbtns"><button onclick="_cw.step=2;renderCreate()">← 上一步</button><button class="goldbtn" onclick="_cw.step=4;renderCreate()">下一步 →</button></div>`}
+ if(_cw.step===4){h+=`<h2>④ 选择这一局的人生主线（锁定，不可更改）</h2><div class="pick">`;
+  for(const k in LINES){const l=LINES[k];
+   const reqs=STAGE_REQ[k];let ladder="";
+   for(let i=1;i<=5;i++)ladder+=`<span class="tag">${l.stages[i]}</span>`;
+   h+=`<div class="p ${_cw.line===k?"sel":""}" onclick="_cw.line='${k}';renderCreate()">${l.icon}<b>${l.name}线</b><div class="d">${l.hint}</div><div>${ladder}</div></div>`}
+  h+=`</div><h2>⑤ 名字</h2><input type="text" id="nameI" value="${esc(_cw.name)}" placeholder="你的名字" oninput="_cw.name=this.value">
+  <div class="small" style="margin-top:8px">人生没有存档点可以回头的部分，这里也一样。</div>
+  <div class="wizbtns"><button onclick="_cw.step=3;renderCreate()">← 上一步</button>
+  <button class="goldbtn" onclick="beginGame()">⚔ 开始人生</button></div>`}
+ h+="</div>";
+ $("create").innerHTML=h}
+
+/* ================= 开局与主循环 ================= */
+const OPEN_LINES={
+ mercenary:"佣兵工会的登记员抬起眼皮：'又一个想赚命的。去橡木村的地窖，鼠人又闹了。'",
+ cleric:"修道院长的信还揣在怀里：'去橡木村，那里有人需要你。'",
+ bard:"酒馆的老板娘说：'唱得好，酒钱算我的。橡木村，出发。'",
+ ranger:"林线尽头传来狼嚎。你踏上通往橡木村的旧道。",
+ merchant:"父亲把货车缰绳递给你：'橡木村、灰石镇……货卖到哪，路就在哪。'",
+ smith:"你背起工具箱。灰石镇的炉火，总得有人接。",
+ nightwalker:"你从当铺后窗溜出，袖里多了一张灰石镇的锁匠图。",
+ alchemist:"蒸馏罐咕嘟作响。你把三瓶药剂塞进行囊，目标是橡木村。"};
+function beginGame(){
+ WIPING=false;
+ _cw.name=($("nameI")?$("nameI").value:"")||_cw.name||"无名者";
+ S=newState(_cw);rngSeed(S.seed);
+ CREATING=false;$("create").classList.add("off");
+ S.evCd.E001=S.day;S.pending.push({id:"E001",dl:7});
+ log("🌅 "+(OPEN_LINES[S.cls]||"你的故事从橡木村开始。"),"epic");
+ save();renderAll();
+ /* 开局时间静止：读完引导、处理完第一个事件后再流动 */
+ S.paused=true;renderTop();
+ modal(`<h2>🌅 ${esc(S.name)}，你的人生开始了</h2>
+  <div class="story">时间自己流动，你负责决策。</div>
+  <div class="bigsteps">
+  <div class="st"><span class="ic">🗺</span><span><b>点地图节点</b> → 发起行动<br><span class="d">数日后自动掷骰结算</span></span></div>
+  <div class="st"><span class="ic">📜</span><span><b>点金色事件卡</b> → 做出抉择<br><span class="d">7日内必须处理</span></span></div>
+  <div class="st"><span class="ic">📒</span><span><b>看左栏账本</b> → 买产业<br><span class="d">产业每天自动入账</span></span></div>
+  </div>
+  <div class="small" style="text-align:center">时间<b>暂停中</b>——处理完第一张事件卡，传奇开场。</div>
+  <button class="goldbtn" style="width:100%;margin-top:8px" onclick="S._autoPause=null;S.paused=false;renderTop();closeModal()">开始 ▶</button>`)}
+function tick(){
+ S.day++;
+ for(const a of S.actions){a.left--;if(a.left<=0)resolveAction(a)}
+ S.actions=S.actions.filter(a=>a.left>0);
+ if(S.contest)contestDay();
+ dailyIncome();
+ if(S.domain)domainTick();
+ for(const p of S.pending)p.dl--;
+ const exp=S.pending.filter(p=>p.dl<=0);
+ if(exp.length){for(const p of exp)autoResolve(p.id);S.pending=S.pending.filter(p=>p.dl>0)}
+ maybeEvent();
+ for(const t of S.timers){t.days--;if(t.days<=0){applyResult(t.fx);if(t.unflag)delete S.flags[t.unflag]}}
+ S.timers=S.timers.filter(t=>t.days>0);
+ checkDebt();
+ checkStage();
+ if(S.day%30===0)monthly();
+ checkEndings();
+ if(S.day%10===0)save();
+ tutCheck();
+ if(!S.ended)renderAll()}
+let _acc=0,_lastT=0;
+setInterval(()=>{const now=Date.now();
+ if(!S||CREATING||S.ended){_lastT=now;return}
+ const tr=$("daytrack"),fi=$("dayprog"),lb=$("dplabel");
+ if(tr&&fi){const pct=Math.min(100,_acc/3000*100);
+  fi.style.width=pct+"%";
+  const pa=!!S.paused;
+  tr.classList.toggle("paused",pa);
+  tr.title=pa?"时间暂停中":"当日进度（1日=3秒×速度）";
+  if(lb)lb.textContent=pa?"暂停":""}
+ if(S.paused){_lastT=now;return}
+ if(!_lastT){_lastT=now;return}
+ // 真实时差累计：标签页被浏览器后台节流/休眠后，唤醒时按实际流逝时间补算放置收益
+ let add=(now-_lastT)*S.speed;
+ if(add>540000)add=540000; // 单次唤醒最多补180天，避免长时间后台一次性卡死页面
+ _acc+=add;_lastT=now;
+ while(_acc>=3000){_acc-=3000;if(!S.ended)tick()}
+ },100);
+setInterval(()=>save(),20000);
+window.addEventListener("beforeunload",()=>save());
+
+/* ================= 启动 ================= */
+(function boot(){
+ WIPING=false;
+ const sv=loadSave();
+ if(sv){
+  /* 存档净化：旧版本数值污染（NaN经JSON序列化会变成null）就地修复 */
+  const num=(v,d)=>(typeof v==="number"&&isFinite(v))?v:d;
+  sv.gold=num(sv.gold,20);sv.infl=num(sv.infl,0);sv.hp=num(sv.hp,num(sv.hpMax,10));
+  if(sv.domain){sv.domain.pop=num(sv.domain.pop,2000);sv.domain.tax=isFinite(sv.domain.tax)?sv.domain.tax:0.12;
+   sv.domain.morale=num(sv.domain.morale,55)}
+  if(sv.org)sv.org.members=num(sv.org.members,10);
+  if(sv.army)for(const u in sv.army)sv.army[u]=num(sv.army[u],0);
+  if(!isFinite(sv.day)||sv.day<1)sv.day=1;
+  if(!isFinite(sv.speed))sv.speed=1}
+ if(sv){S=sv;rngSeed(S.seed||1);
+  S.speed=S.speed||1;S.flags=S.flags||{};S.monop=S.monop||{};S.timers=S.timers||[];
+  if(S.tut==null)S.tut=99;
+  const off=Math.floor((Date.now()-(S.lastReal||Date.now()))/3000);
+  if(off>=1){const d=Math.min(7,off);
+   const net=Math.max(0,(assetIncome()+contractIncome()+rentIncome()+tributeIncome()-wages()))*0.5*d;
+   const ir=mainRate()*0.5*d;S.gold+=net;S.infl+=ir;S.day+=d;S.lastReal=Date.now();save();
+   setTimeout(()=>offlineReport(d),300)}
+  renderAll();
+  log("📖 你回来了。日志还在，世界也还在。")}
+ else{CREATING=true;$("create").classList.remove("off");renderCreate()}
+})();
+
+</script>
+</body>
+</html>

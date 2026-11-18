@@ -1,0 +1,9 @@
+# 测试/构建临时脚本
+_*.js
+_*.html
+_check*.js
+
+# 系统文件
+Thumbs.db
+Desktop.ini
+.DS_Store
